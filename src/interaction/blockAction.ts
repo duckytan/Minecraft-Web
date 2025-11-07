@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { RaycastController, RaycastHit } from './raycast';
 import { World } from '../world/world';
-import { BlockType } from '../world/block';
+import { BlockType, BLOCK_SIZE } from '../world/block';
 import { BoundingBox } from '../physics/collision';
 
 export interface BlockActionOptions {
@@ -17,6 +17,8 @@ export class BlockActionController {
   private readonly raycast: RaycastController;
 
   private currentBlockType: BlockType;
+
+  private static readonly POSITION_EPSILON = 1e-3;
 
   private readonly playerBoundingBox: () => BoundingBox;
 
@@ -76,12 +78,9 @@ export class BlockActionController {
       return;
     }
 
-    const blockPos = hit.object.position;
-    this.world.removeBlock(
-      Math.round(blockPos.x),
-      Math.round(blockPos.y),
-      Math.round(blockPos.z)
-    );
+    const blockPos = this.getTargetBlockPosition(hit, 'remove');
+
+    this.world.removeBlock(blockPos.x, blockPos.y, blockPos.z);
   }
 
   private handlePlaceBlock(): void {
@@ -91,14 +90,7 @@ export class BlockActionController {
       return;
     }
 
-    const blockPos = hit.object.position;
-    const normal = hit.normal;
-
-    const newBlockPos = new THREE.Vector3(
-      Math.round(blockPos.x + normal.x),
-      Math.round(blockPos.y + normal.y),
-      Math.round(blockPos.z + normal.z)
-    );
+    const newBlockPos = this.getTargetBlockPosition(hit, 'place');
 
     if (this.wouldCollideWithPlayer(newBlockPos)) {
       return;
@@ -109,9 +101,11 @@ export class BlockActionController {
 
   private wouldCollideWithPlayer(blockPos: THREE.Vector3): boolean {
     const playerBox = this.playerBoundingBox();
+    const worldCenter = this.toWorldCenter(blockPos);
+    const halfSize = BLOCK_SIZE / 2;
     const blockBox = new BoundingBox(
-      new THREE.Vector3(blockPos.x - 0.5, blockPos.y - 0.5, blockPos.z - 0.5),
-      new THREE.Vector3(blockPos.x + 0.5, blockPos.y + 0.5, blockPos.z + 0.5)
+      new THREE.Vector3(worldCenter.x - halfSize, worldCenter.y - halfSize, worldCenter.z - halfSize),
+      new THREE.Vector3(worldCenter.x + halfSize, worldCenter.y + halfSize, worldCenter.z + halfSize)
     );
 
     return playerBox.intersects(blockBox);
@@ -125,5 +119,27 @@ export class BlockActionController {
   getCastRayFromCamera(): RaycastHit | null {
     const blocks = this.world.getAllBlocks();
     return this.raycast.cast(this.camera, blocks);
+  }
+
+  private getTargetBlockPosition(hit: RaycastHit, action: 'place' | 'remove'): THREE.Vector3 {
+    const point = hit.point.clone();
+    const offsetMagnitude = BLOCK_SIZE / 2 + BlockActionController.POSITION_EPSILON;
+    const direction = action === 'remove' ? -1 : 1;
+
+    point.addScaledVector(hit.normal, offsetMagnitude * direction);
+
+    return new THREE.Vector3(
+      Math.round(point.x / BLOCK_SIZE),
+      Math.round(point.y / BLOCK_SIZE),
+      Math.round(point.z / BLOCK_SIZE)
+    );
+  }
+
+  private toWorldCenter(blockPos: THREE.Vector3): THREE.Vector3 {
+    return new THREE.Vector3(
+      blockPos.x * BLOCK_SIZE,
+      blockPos.y * BLOCK_SIZE,
+      blockPos.z * BLOCK_SIZE
+    );
   }
 }
