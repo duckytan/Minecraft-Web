@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { createScene } from './core/scene';
 import { createCamera, updateCameraAspect } from './core/camera';
 import { createRenderer } from './core/renderer';
-import { generateFlatTerrain } from './world/terrain';
+import { ChunkManager } from './world/chunkManager';
 import { World } from './world/world';
 import { KeyboardInput } from './input/keyboard';
 import { MouseLookController } from './input/mouse';
@@ -26,7 +26,13 @@ class Game {
 
   private readonly world: World;
 
+  private readonly chunkManager: ChunkManager;
+
   private readonly hud: ReturnType<typeof initHUD>;
+
+  private lastChunkUpdate = 0;
+
+  private readonly chunkUpdateInterval = 0.5; // 每0.5秒更新一次
 
   constructor() {
     this.scene = createScene();
@@ -53,17 +59,20 @@ class Game {
 
     this.player = new Player(this.camera, this.keyboard);
 
-    this.world = new World(this.scene);
+    // 创建 ChunkManager（渲染距离4，即9x9个chunk）
+    this.chunkManager = new ChunkManager(this.scene, 4);
 
-    const terrain = generateFlatTerrain();
-    this.scene.add(terrain);
-    this.world.importTerrain(terrain);
+    // 生成初始地形
+    this.chunkManager.generateFlatTerrain(0, 0, 4);
+
+    // 创建 World 并集成 ChunkManager
+    this.world = new World(this.scene, this.chunkManager);
 
     new BlockActionController(this.world, this.camera, () => this.player.getBoundingBox());
 
     this.setupEventListeners();
 
-    console.log('✅ 游戏初始化完成');
+    console.log('✅ 游戏初始化完成（Chunk系统已启用）');
     console.log('🎮 操作提示：');
     console.log('  - WASD: 移动');
     console.log('  - Space: 跳跃');
@@ -71,6 +80,7 @@ class Game {
     console.log('  - 左键: 破坏方块');
     console.log('  - 右键: 放置方块');
     console.log('  - 1-5: 切换方块类型');
+    console.log(`📦 已加载 ${this.chunkManager.getLoadedChunkCount()} 个 Chunk`);
   }
 
   private setupEventListeners(): void {
@@ -91,7 +101,15 @@ class Game {
 
     const deltaTime = this.clock.getDelta();
 
-    const colliders = this.world.getAllBlocks();
+    // 定期更新 Chunk
+    this.lastChunkUpdate += deltaTime;
+    if (this.lastChunkUpdate >= this.chunkUpdateInterval) {
+      this.chunkManager.updateChunks(this.player.getPosition());
+      this.lastChunkUpdate = 0;
+    }
+
+    // 使用 ChunkManager 的碰撞检测
+    const colliders = this.chunkManager.getAllMeshes();
     this.player.update(deltaTime, colliders);
 
     this.renderer.render(this.scene, this.camera);

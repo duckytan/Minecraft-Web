@@ -1,90 +1,59 @@
 import * as THREE from 'three';
-import { BlockType, BLOCK_COLORS, BLOCK_SIZE } from './block';
+import { BlockType } from './block';
+import { Chunk } from './chunk';
+import { ChunkManager } from './chunkManager';
 
 export class World {
   private readonly scene: THREE.Scene;
 
-  private readonly blocks: Map<string, THREE.Mesh> = new Map();
+  private readonly chunkManager: ChunkManager;
 
-  private readonly geometry: THREE.BoxGeometry;
-
-  constructor(scene: THREE.Scene) {
+  constructor(scene: THREE.Scene, chunkManager?: ChunkManager) {
     this.scene = scene;
-    this.geometry = new THREE.BoxGeometry(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
-    this.geometry.computeBoundingBox();
-  }
-
-  private getBlockKey(x: number, y: number, z: number): string {
-    return `${x},${y},${z}`;
-  }
-
-  setBlock(x: number, y: number, z: number, blockType: BlockType): THREE.Mesh | null {
-    if (blockType === BlockType.AIR) {
-      return this.removeBlock(x, y, z);
-    }
-
-    const key = this.getBlockKey(x, y, z);
-
-    if (this.blocks.has(key)) {
-      return null;
-    }
-
-    const material = new THREE.MeshLambertMaterial({
-      color: BLOCK_COLORS[blockType]
-    });
-
-    const mesh = new THREE.Mesh(this.geometry, material);
-    mesh.position.set(x, y, z);
-    mesh.castShadow = true;
-    mesh.receiveShadow = true;
-
-    this.scene.add(mesh);
-    this.blocks.set(key, mesh);
-
-    return mesh;
-  }
-
-  removeBlock(x: number, y: number, z: number): null {
-    const key = this.getBlockKey(x, y, z);
-    const block = this.blocks.get(key);
-
-    if (block) {
-      this.scene.remove(block);
-      this.blocks.delete(key);
-    }
-
-    return null;
-  }
-
-  getBlock(x: number, y: number, z: number): THREE.Mesh | null {
-    const key = this.getBlockKey(x, y, z);
-    return this.blocks.get(key) || null;
-  }
-
-  getAllBlocks(): THREE.Mesh[] {
-    return Array.from(this.blocks.values());
+    this.chunkManager = chunkManager ?? new ChunkManager(scene);
   }
 
   getScene(): THREE.Scene {
     return this.scene;
   }
 
+  getChunkManager(): ChunkManager {
+    return this.chunkManager;
+  }
+
+  setBlock(x: number, y: number, z: number, blockType: BlockType): THREE.Mesh | null {
+    this.chunkManager.setBlock(x, y, z, blockType);
+    const { chunkX, chunkZ } = Chunk.worldToChunkCoords(x, z);
+    return this.chunkManager.getChunk(chunkX, chunkZ)?.getMesh() ?? null;
+  }
+
+  removeBlock(x: number, y: number, z: number): null {
+    this.chunkManager.setBlock(x, y, z, BlockType.AIR);
+    return null;
+  }
+
+  getBlock(x: number, y: number, z: number): BlockType {
+    return this.chunkManager.getBlock(x, y, z);
+  }
+
+  getAllBlocks(): THREE.Mesh[] {
+    return this.chunkManager.getAllMeshes();
+  }
+
   clearAll(): void {
-    for (const block of this.blocks.values()) {
-      this.scene.remove(block);
-    }
-    this.blocks.clear();
+    this.chunkManager.clearAll();
   }
 
   importTerrain(terrainGroup: THREE.Group): void {
     terrainGroup.traverse((child) => {
       if (child instanceof THREE.Mesh) {
-        const x = Math.round(child.position.x);
-        const y = Math.round(child.position.y);
-        const z = Math.round(child.position.z);
-
-        const key = this.getBlockKey(x, y, z);
-        this.blocks.set(key, child);
+        const position = child.position.clone();
+        const blockPos = new THREE.Vector3(
+          Math.round(position.x),
+          Math.round(position.y),
+          Math.round(position.z)
+        );
+        this.setBlock(blockPos.x, blockPos.y, blockPos.z, BlockType.GRASS);
       }
     });
   }
