@@ -57,6 +57,15 @@
 
 ---
 
+## ✅ 测试与质量保障
+
+- `npm run test`：运行 Vitest 单元测试（watch 模式）。
+- `npm run test:coverage`：运行全部测试并生成 v8 覆盖率报告。
+- 覆盖率目标：语句 ≥ 60%，当前已达 98.91%。
+- 所有测试位于 `src/__tests__/` 目录，可根据模块拆分新增。
+
+---
+
 ## 🗂 旧版资料溯源
 
 - 旧版 `README.md` 与 `docs/RESEARCH_REPORT.md` 的完整原文分别存档在 [A1](docs/A1_原始README全文.md) 与 [A2](docs/A2_技术方案研究报告全文.md)，以便比对与审计。

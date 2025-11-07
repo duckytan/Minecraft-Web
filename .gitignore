@@ -12,6 +12,10 @@ yarn-debug.log*
 yarn-error.log*
 server.log
 
+# Test coverage
+coverage/
+.nyc_output/
+
 # Editor directories and files
 .vscode/
 .idea/
