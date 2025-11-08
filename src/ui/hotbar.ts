@@ -99,13 +99,16 @@ export function initHotbar(): Hotbar {
 
   // 监听键盘事件（1-9 键）
   const handleKeyDown = (event: KeyboardEvent) => {
+    // 检查是否按下的是数字键
     const key = parseInt(event.key, 10);
     if (Number.isNaN(key)) {
       return;
     }
 
+    // 只在按下 1-9 键时处理
     if (key >= 1 && key <= 9) {
       setSelectedIndex(key - 1);
+      // 不阻止事件传播，让其他监听器也能接收到
     }
   };
 

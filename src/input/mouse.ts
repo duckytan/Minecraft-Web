@@ -47,9 +47,8 @@ export class MouseLookController {
     const locked = document.pointerLockElement === this.domElement;
     this.isLocked = locked;
 
-    if (!locked) {
-      this.domElement.focus();
-    }
+    // 无论锁定或释放都确保 canvas 获得焦点，避免键盘事件丢失
+    this.domElement.focus();
 
     this.onLockChange?.(locked);
   };
