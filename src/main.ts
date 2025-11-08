@@ -70,13 +70,19 @@ class Game {
     new MouseLookController(this.renderer.domElement, this.camera, {
       onLockChange: (locked) => {
         this.hud.setPointerLockState(locked);
-        if (!locked) {
-          this.renderer.domElement.focus();
-        }
+        // 无论锁定或释放都确保 canvas 获得焦点
+        this.renderer.domElement.focus();
       }
     });
 
+    // 初始焦点
     this.renderer.domElement.focus();
+
+    // 确保任何时候点击 canvas 都会恢复焦点
+    this.renderer.domElement.addEventListener('mousedown', () => {
+      this.renderer.domElement.focus();
+    });
+
     console.log('✅ Canvas 已聚焦，可以使用键盘控制');
 
     this.player = new Player(this.camera, this.keyboard);
