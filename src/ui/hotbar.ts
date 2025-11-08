@@ -76,7 +76,16 @@ export function initHotbar(): Hotbar {
     slotElement.appendChild(slotNumber);
     slotElement.appendChild(blockName);
 
-    slotElement.addEventListener('click', () => setSelectedIndex(index));
+    slotElement.addEventListener('click', (e) => {
+      setSelectedIndex(index);
+      // 立即失焦，防止捕获键盘事件
+      (e.target as HTMLElement).blur();
+      // 将焦点返回到 canvas
+      const canvas = document.querySelector('canvas');
+      if (canvas) {
+        (canvas as HTMLCanvasElement).focus();
+      }
+    });
 
     container.appendChild(slotElement);
     slotElements.push(slotElement);
