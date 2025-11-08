@@ -3,7 +3,7 @@ import { describe, expect, it, beforeEach } from 'vitest';
 
 import { BlockType } from '@/world/block';
 import { ChunkManager } from '@/world/chunkManager';
-import { CHUNK_SIZE } from '@/world/chunk';
+import { CHUNK_SIZE, CHUNK_HEIGHT } from '@/world/chunk';
 
 describe('ChunkManager', () => {
   let scene: THREE.Scene;
@@ -104,5 +104,54 @@ describe('ChunkManager', () => {
     expect(chunkManager.getBlock(0, 5, 0)).toBe(BlockType.GRASS);
     expect(chunkManager.getBlock(CHUNK_SIZE, 5, 0)).toBe(BlockType.DIRT);
     expect(chunkManager.getBlock(0, 5, CHUNK_SIZE)).toBe(BlockType.STONE);
+  });
+
+  it('should generate perlin noise terrain correctly', () => {
+    chunkManager.generateTerrain(0, 0, 1);
+
+    // 应该创建了 3x3 个chunk
+    expect(chunkManager.getLoadedChunkCount()).toBeGreaterThanOrEqual(9);
+
+    // 检查地形有高度变化（不是平坦的）
+    const heights: number[] = [];
+    for (let x = 0; x < CHUNK_SIZE; x += 4) {
+      for (let z = 0; z < CHUNK_SIZE; z += 4) {
+        // 找到该位置的地表高度
+        for (let y = 0; y < CHUNK_HEIGHT; y++) {
+          const blockAbove = chunkManager.getBlock(x, y + 1, z);
+          const blockCurrent = chunkManager.getBlock(x, y, z);
+          if (blockCurrent !== BlockType.AIR && blockAbove === BlockType.AIR) {
+            heights.push(y);
+            break;
+          }
+        }
+      }
+    }
+
+    // 确保有多个不同的高度值（地形有起伏）
+    const uniqueHeights = new Set(heights);
+    expect(uniqueHeights.size).toBeGreaterThan(1);
+  });
+
+  it('should generate terrain with correct block types', () => {
+    chunkManager.generateTerrain(0, 0, 0, 0.05, 12, 15);
+
+    // 检查某个位置的地形层结构
+    let foundGrass = false;
+    let foundDirt = false;
+    let foundStone = false;
+
+    // 在 (0, 0) 位置向上查找
+    for (let y = 0; y < CHUNK_HEIGHT; y++) {
+      const block = chunkManager.getBlock(0, y, 0);
+      if (block === BlockType.GRASS) foundGrass = true;
+      if (block === BlockType.DIRT) foundDirt = true;
+      if (block === BlockType.STONE) foundStone = true;
+    }
+
+    // 地形应该包含所有三种方块类型
+    expect(foundGrass).toBe(true);
+    expect(foundDirt).toBe(true);
+    expect(foundStone).toBe(true);
   });
 });

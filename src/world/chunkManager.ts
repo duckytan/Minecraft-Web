@@ -1,6 +1,8 @@
 import * as THREE from 'three';
-import { Chunk, CHUNK_SIZE } from './chunk';
+import { createNoise2D } from 'simplex-noise';
+import { Chunk, CHUNK_SIZE, CHUNK_HEIGHT } from './chunk';
 import { BlockType } from './block';
+import type { TerrainConfig, TerrainData } from './terrainTypes';
 
 /**
  * ChunkManager 类 - 管理所有 Chunk 的生命周期
@@ -9,10 +11,16 @@ export class ChunkManager {
   private readonly scene: THREE.Scene;
   private readonly chunks: Map<string, Chunk> = new Map();
   private readonly renderDistance: number;
+  private readonly noise2D: ReturnType<typeof createNoise2D>;
+  private terrainWorker: Worker | null = null;
+  private pendingChunks: Map<string, Array<{ resolve: (data: TerrainData) => void; reject: (error: Error) => void }>> =
+    new Map();
+  private readonly loadingChunks: Set<string> = new Set();
 
   constructor(scene: THREE.Scene, renderDistance: number = 4) {
     this.scene = scene;
     this.renderDistance = renderDistance;
+    this.noise2D = createNoise2D();
   }
 
   /**
@@ -68,11 +76,15 @@ export class ChunkManager {
       }
     }
 
-    // 加载新 Chunk
+    // 加载新 Chunk（异步生成地形）
     for (const { x, z } of chunksToLoad) {
       const chunk = this.getOrCreateChunk(x, z);
-      if (!chunk.isLoaded()) {
-        chunk.generateMesh();
+      const key = chunk.getKey();
+
+      if (!chunk.isLoaded() && !this.loadingChunks.has(key)) {
+        this.loadChunkTerrain(x, z).catch((error) => {
+          console.error(`Failed to load chunk (${x}, ${z})`, error);
+        });
       }
     }
 
@@ -134,7 +146,7 @@ export class ChunkManager {
   }
 
   /**
-   * 生成平坦地形
+   * 生成平坦地形（向后兼容）
    */
   public generateFlatTerrain(centerChunkX: number, centerChunkZ: number, radius: number): void {
     for (let cx = centerChunkX - radius; cx <= centerChunkX + radius; cx++) {
@@ -156,6 +168,237 @@ export class ChunkManager {
   }
 
   /**
+   * 使用 Perlin 噪声生成地形
+   * @param centerChunkX 中心 Chunk X 坐标
+   * @param centerChunkZ 中心 Chunk Z 坐标
+   * @param radius 生成半径（单位：Chunk）
+   * @param scale 噪声缩放（越小越平滑，推荐 0.05-0.1）
+   * @param heightMultiplier 高度乘数（影响地形起伏，推荐 8-16）
+   * @param baseHeight 基础高度（地形最低点，推荐 10-20）
+   */
+  public generateTerrain(
+    centerChunkX: number,
+    centerChunkZ: number,
+    radius: number,
+    scale: number = 0.05,
+    heightMultiplier: number = 12,
+    baseHeight: number = 15
+  ): void {
+    for (let cx = centerChunkX - radius; cx <= centerChunkX + radius; cx++) {
+      for (let cz = centerChunkZ - radius; cz <= centerChunkZ + radius; cz++) {
+        this.loadChunkTerrainSync(cx, cz, scale, heightMultiplier, baseHeight);
+      }
+    }
+  }
+
+  /**
+   * 初始化 Web Worker（需要手动调用）
+   */
+  public initWorker(): void {
+    if (this.terrainWorker) {
+      return;
+    }
+
+    try {
+      this.terrainWorker = new Worker(new URL('../workers/terrain.worker.ts', import.meta.url), {
+        type: 'module'
+      });
+
+      this.terrainWorker.onmessage = (e: MessageEvent<TerrainData>) => {
+        const data = e.data;
+        const key = Chunk.getChunkKey(data.chunkX, data.chunkZ);
+        const pendings = this.pendingChunks.get(key);
+
+        if (pendings && pendings.length > 0) {
+          // 通知所有等待该 Chunk 的 Promise
+          for (const pending of pendings) {
+            pending.resolve(data);
+          }
+          this.pendingChunks.delete(key);
+          this.loadingChunks.delete(key);
+        }
+      };
+
+      this.terrainWorker.onerror = (error) => {
+        console.error('Terrain worker error:', error);
+        for (const [key, pendings] of this.pendingChunks.entries()) {
+          for (const pending of pendings) {
+            pending.reject(new Error('Worker error'));
+          }
+          this.loadingChunks.delete(key);
+        }
+        this.pendingChunks.clear();
+      };
+
+      console.log('✅ Terrain Worker 已初始化');
+    } catch (error) {
+      console.warn('⚠️ Worker 初始化失败，将使用同步生成:', error);
+    }
+  }
+
+  /**
+   * 加载单个 Chunk 的地形（使用 Worker 或回退到同步）
+   */
+  private async loadChunkTerrain(
+    chunkX: number,
+    chunkZ: number,
+    scale: number = 0.05,
+    heightMultiplier: number = 12,
+    baseHeight: number = 15
+  ): Promise<void> {
+    if (this.terrainWorker) {
+      try {
+        const data = await this.generateChunkTerrainAsync(chunkX, chunkZ, scale, heightMultiplier, baseHeight);
+        const chunk = this.getOrCreateChunk(data.chunkX, data.chunkZ);
+        const blocks = new Uint8Array(data.blocks);
+        chunk.applyBlocksData(blocks);
+        chunk.generateMesh();
+      } catch (error) {
+        console.error(`Worker failed for chunk (${chunkX}, ${chunkZ}), using sync fallback:`, error);
+        this.loadChunkTerrainSync(chunkX, chunkZ, scale, heightMultiplier, baseHeight);
+      }
+    } else {
+      this.loadChunkTerrainSync(chunkX, chunkZ, scale, heightMultiplier, baseHeight);
+    }
+  }
+
+  /**
+   * 同步加载单个 Chunk 的地形
+   */
+  private loadChunkTerrainSync(
+    chunkX: number,
+    chunkZ: number,
+    scale: number,
+    heightMultiplier: number,
+    baseHeight: number
+  ): void {
+    const chunk = this.getOrCreateChunk(chunkX, chunkZ);
+
+    for (let x = 0; x < CHUNK_SIZE; x++) {
+      for (let z = 0; z < CHUNK_SIZE; z++) {
+        for (let y = 0; y < CHUNK_HEIGHT; y++) {
+          chunk.setBlock(x, y, z, BlockType.AIR);
+        }
+
+        const worldX = chunkX * CHUNK_SIZE + x;
+        const worldZ = chunkZ * CHUNK_SIZE + z;
+
+        const noiseValue = this.noise2D(worldX * scale, worldZ * scale);
+        const height = Math.floor(baseHeight + noiseValue * heightMultiplier);
+        const clampedHeight = Math.max(0, Math.min(CHUNK_HEIGHT - 1, height));
+
+        for (let y = 0; y <= clampedHeight; y++) {
+          let blockType: BlockType;
+          if (y === clampedHeight) {
+            blockType = BlockType.GRASS;
+          } else if (y >= clampedHeight - 3) {
+            blockType = BlockType.DIRT;
+          } else {
+            blockType = BlockType.STONE;
+          }
+          chunk.setBlock(x, y, z, blockType);
+        }
+      }
+    }
+
+    chunk.generateMesh();
+  }
+
+  /**
+   * 使用 Web Worker 异步生成单个 Chunk 的地形
+   */
+  private async generateChunkTerrainAsync(
+    chunkX: number,
+    chunkZ: number,
+    scale: number,
+    heightMultiplier: number,
+    baseHeight: number
+  ): Promise<TerrainData> {
+    const key = Chunk.getChunkKey(chunkX, chunkZ);
+
+    // 如果已经在加载中，等待现有的 Promise
+    if (this.loadingChunks.has(key)) {
+      return new Promise((resolve, reject) => {
+        const pendings = this.pendingChunks.get(key);
+        if (pendings) {
+          pendings.push({ resolve, reject });
+        } else {
+          this.pendingChunks.set(key, [{ resolve, reject }]);
+        }
+      });
+    }
+
+    this.loadingChunks.add(key);
+
+    return new Promise((resolve, reject) => {
+      if (!this.terrainWorker) {
+        this.loadingChunks.delete(key);
+        reject(new Error('Worker not initialized'));
+        return;
+      }
+
+      this.pendingChunks.set(key, [{ resolve, reject }]);
+
+      const config: TerrainConfig = {
+        chunkX,
+        chunkZ,
+        chunkSize: CHUNK_SIZE,
+        chunkHeight: CHUNK_HEIGHT,
+        scale,
+        heightMultiplier,
+        baseHeight
+      };
+
+      this.terrainWorker.postMessage(config);
+    });
+  }
+
+  /**
+   * 异步生成地形（使用 Web Worker）
+   * @param centerChunkX 中心 Chunk X 坐标
+   * @param centerChunkZ 中心 Chunk Z 坐标
+   * @param radius 生成半径（单位：Chunk）
+   * @param scale 噪声缩放（越小越平滑，推荐 0.05-0.1）
+   * @param heightMultiplier 高度乘数（影响地形起伏，推荐 8-16）
+   * @param baseHeight 基础高度（地形最低点，推荐 10-20）
+   */
+  public async generateTerrainAsync(
+    centerChunkX: number,
+    centerChunkZ: number,
+    radius: number,
+    scale: number = 0.05,
+    heightMultiplier: number = 12,
+    baseHeight: number = 15
+  ): Promise<void> {
+    // 确保 Worker 已初始化
+    if (!this.terrainWorker) {
+      console.warn('Worker not initialized, falling back to sync generation');
+      this.generateTerrain(centerChunkX, centerChunkZ, radius, scale, heightMultiplier, baseHeight);
+      return;
+    }
+
+    const promises: Promise<void>[] = [];
+
+    for (let cx = centerChunkX - radius; cx <= centerChunkX + radius; cx++) {
+      for (let cz = centerChunkZ - radius; cz <= centerChunkZ + radius; cz++) {
+        const promise = this.generateChunkTerrainAsync(cx, cz, scale, heightMultiplier, baseHeight).then(
+          (data) => {
+            const chunk = this.getOrCreateChunk(data.chunkX, data.chunkZ);
+            // 将 ArrayBuffer 转换回 Uint8Array
+            const blocks = new Uint8Array(data.blocks);
+            chunk.applyBlocksData(blocks);
+            chunk.generateMesh();
+          }
+        );
+
+        promises.push(promise);
+      }
+    }
+
+    await Promise.all(promises);
+  }
+
+  /**
    * 清除所有 Chunk
    */
   public clearAll(): void {
@@ -163,6 +406,19 @@ export class ChunkManager {
       chunk.unload();
     }
     this.chunks.clear();
+  }
+
+  /**
+   * 终止 Worker
+   */
+  public dispose(): void {
+    if (this.terrainWorker) {
+      this.terrainWorker.terminate();
+      this.terrainWorker = null;
+      this.pendingChunks.clear();
+      this.loadingChunks.clear();
+    }
+    this.clearAll();
   }
 
   /**

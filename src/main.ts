@@ -62,8 +62,13 @@ class Game {
     // 创建 ChunkManager（渲染距离4，即9x9个chunk）
     this.chunkManager = new ChunkManager(this.scene, 4);
 
-    // 生成初始地形
-    this.chunkManager.generateFlatTerrain(0, 0, 4);
+    // 初始化 Web Worker（可选，用于异步地形生成）
+    // 如果 Worker 初始化失败，会自动回退到同步生成
+    this.chunkManager.initWorker();
+
+    // 生成初始地形（使用 Perlin 噪声）
+    // 参数：centerX, centerZ, radius, scale, heightMultiplier, baseHeight
+    this.chunkManager.generateTerrain(0, 0, 4, 0.05, 12, 15);
 
     // 创建 World 并集成 ChunkManager
     this.world = new World(this.scene, this.chunkManager);

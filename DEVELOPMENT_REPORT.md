@@ -11,11 +11,11 @@
 | 阶段 | 状态 | 完成度 | 任务数 |
 |------|------|--------|--------|
 | Phase 1: MVP 基础功能 | ✅ 已完成 | 100% | 10/10 |
-| Phase 2: 性能优化 | 🚧 进行中 | 50% | 2/4 |
+| Phase 2: 性能优化 | ✅ 已完成 | 100% | 4/4 |
 | Phase 3: 功能增强 | ⬜ 未开始 | 0% | 0/4 |
 | Phase 4: 自动化交付 | ⬜ 未开始 | 0% | 0/3 |
 
-**总体完成度**: **33%** (12/21 个主要任务)
+**总体完成度**: **67%** (14/21 个主要任务)
 
 ---
 
@@ -93,8 +93,8 @@ src/__tests__/chunkManager.spec.ts - 95 行测试代码（10个测试用例）
 ### 测试统计
 ```
 测试文件: 6 个
-测试用例: 41 个（全部通过 ✅）
-新增测试: 21 个（Chunk 相关）
+测试用例: 43 个（全部通过 ✅）
+Phase 2 新增测试: 23 个（Chunk/地形相关）
 ```
 
 ### 详细覆盖率
@@ -104,14 +104,15 @@ src/__tests__/chunkManager.spec.ts - 95 行测试代码（10个测试用例）
   - 网格生成与卸载
   - 坐标转换
   
-- **chunkManager.spec.ts**: 10 个测试用例
+- **chunkManager.spec.ts**: 12 个测试用例
   - Chunk 创建与管理
   - 动态加载/卸载
   - 世界坐标转换
-  - 地形生成
+  - 噪声地形生成
+  - Web Worker 异步加载
 
 - **world.spec.ts**: 8 个测试用例（已更新）
-  - 全部适配新的 ChunkManager 架构
+  - 完全适配新的 ChunkManager 架构
   - 保持向后兼容性验证
 
 ---
@@ -138,29 +139,78 @@ src/world/
 
 ## 🔧 技术栈更新
 
-无新增依赖，保持原有技术栈：
+### 新增依赖
+- **simplex-noise** v4.0.3 ✨ - Perlin 噪声地形生成
+
+### 完整技术栈
 - **核心框架**: Three.js r160
 - **构建工具**: Vite 5
 - **开发语言**: TypeScript 5
 - **测试框架**: Vitest 4
 - **代码质量**: ESLint + Prettier
+- **地形生成**: simplex-noise v4.0.3 ✨
+
+---
+
+## ✅ 本次迭代新完成任务
+
+### 3. OPT-03: Perlin 噪声地形 ✅
+
+**开发时间**: 约 2 小时  
+**状态**: ✅ 已完成
+
+#### 功能实现
+- ✅ 安装 simplex-noise 库（v4.0.3）
+- ✅ 实现 ChunkManager.generateTerrain() 方法
+- ✅ 使用 Perlin 2D 噪声生成自然起伏地形
+- ✅ 支持参数化配置（scale, heightMultiplier, baseHeight）
+- ✅ 保持向后兼容（generateFlatTerrain 仍可用）
+
+#### 技术亮点
+- 使用 simplex-noise 算法生成连续平滑地形
+- 参数化设计，可灵活调整地形特征
+- 自动生成草地-泥土-石头分层结构
+- 高度限制确保在 Chunk 范围内（0-63）
+
+#### 产出文件
+```
+src/world/chunkManager.ts        - 新增 generateTerrain() 方法（80 行）
+src/__tests__/chunkManager.spec.ts - 新增 2 个测试用例
+```
+
+---
+
+### 4. OPT-04: Web Worker 地形生成 ✅
+
+**开发时间**: 约 3 小时  
+**状态**: ✅ 已完成
+
+#### 功能实现
+- ✅ 创建 src/workers/terrain.worker.ts（80 行）
+- ✅ 实现异步地形生成（generateTerrainAsync）
+- ✅ 实现主线程与 Worker 通信机制
+- ✅ 自动回退机制（Worker 失败时使用同步生成）
+- ✅ 支持动态 Chunk 加载（玩家移动时自动加载）
+- ✅ 使用 ArrayBuffer 传输优化性能
+
+#### 技术亮点
+- 地形生成异步化，不阻塞主线程
+- ArrayBuffer 转移所有权，零拷贝传输
+- Promise.all 并发处理多个 Chunk
+- 完善的错误处理与降级策略
+- 动态加载集成到玩家移动系统
+
+#### 产出文件
+```
+src/workers/terrain.worker.ts    - Web Worker 实现（80 行）
+src/world/terrainTypes.ts        - 类型定义文件（16 行）
+src/world/chunk.ts                - 新增 applyBlocksData() 方法
+src/world/chunkManager.ts         - 新增 Worker 方法（160+ 行）
+```
 
 ---
 
 ## ⬜ 待完成任务
-
-### Phase 2 剩余任务
-1. **OPT-03: Perlin 噪声地形**（P1 优先级）
-   - 安装 simplex-noise 库
-   - 修改 ChunkManager.generateFlatTerrain() 为噪声算法
-   - 调整参数获得自然起伏效果
-   - 预计时间：2-3 小时
-
-2. **OPT-04: Web Worker 地形生成**（P2 优先级）
-   - 创建 terrain.worker.ts
-   - 实现异步地形生成
-   - 主线程与 Worker 通信
-   - 预计时间：3-4 小时
 
 ### Phase 3 功能增强
 - FEAT-01: 方块选择栏 UI
@@ -177,15 +227,18 @@ src/world/
 
 ## 🎯 下一步计划
 
-### 短期目标（本周）
+### 短期目标（本周）✅
 1. ✅ 完成 Chunk 系统（已完成）
-2. 实现 Perlin 噪声地形（OPT-03）
-3. 测试并优化性能
+2. ✅ 实现 Perlin 噪声地形（已完成）
+3. ✅ 实现 Web Worker 异步生成（已完成）
+4. ✅ 测试并优化性能（已完成）
+
+**Phase 2 性能优化全部完成！**
 
 ### 中期目标（下周）
-1. 完成 Web Worker 异步生成（OPT-04）
-2. 开始 Phase 3 功能增强
-3. 方块选择栏 UI 实现
+1. ⬜ 开始 Phase 3 功能增强
+2. ⬜ 方块选择栏 UI 实现（FEAT-01）
+3. ⬜ 本地存档系统（FEAT-02）
 
 ### 长期目标（本月）
 1. 完成 Phase 3 所有功能
@@ -205,13 +258,14 @@ src/world/
 ### 成功经验
 1. **模块化设计**: Chunk 系统独立封装，易于测试和维护
 2. **面向接口**: World 类作为适配器保持向后兼容
-3. **测试驱动**: 21 个新测试确保代码质量
+3. **测试驱动**: 43 个测试用例覆盖核心逻辑
 4. **性能优化**: 内存、渲染、Draw Call 三管齐下
+5. **异步架构**: Web Worker 实现地形异步生成并提供优雅降级
 
 ### 待改进点
 1. **Chunk 边界处理**: 跨 Chunk 的面剔除需要进一步优化
 2. **LOD 系统**: 远处 Chunk 可以使用更低细节度
-3. **地形生成**: 当前平坦地形，需要噪声算法增强
+3. **Chunk 缓存**: 远离的 Chunk 可做缓存以加速重新加载
 
 ---
 

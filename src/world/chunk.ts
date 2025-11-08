@@ -49,6 +49,16 @@ export class Chunk {
   }
 
   /**
+   * 使用外部数据替换整个 Chunk 的方块数组
+   */
+  public applyBlocksData(blocks: Uint8Array): void {
+    if (blocks.length !== CHUNK_SIZE * CHUNK_HEIGHT * CHUNK_SIZE) {
+      throw new Error('Invalid block data length for chunk');
+    }
+    this.blocks = blocks;
+  }
+
+  /**
    * 获取方块类型
    */
   public getBlock(x: number, y: number, z: number): BlockType {
