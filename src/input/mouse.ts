@@ -31,13 +31,14 @@ export class MouseLookController {
   }
 
   private bindEvents(): void {
-    document.addEventListener('click', this.handleDocumentClick);
+    this.domElement.addEventListener('click', this.handleDocumentClick);
     document.addEventListener('pointerlockchange', this.handlePointerLockChange);
     document.addEventListener('mousemove', this.handleMouseMove);
   }
 
   private handleDocumentClick = (): void => {
     if (!this.isLocked) {
+      this.domElement.focus();
       this.domElement.requestPointerLock();
     }
   };
@@ -45,6 +46,11 @@ export class MouseLookController {
   private handlePointerLockChange = (): void => {
     const locked = document.pointerLockElement === this.domElement;
     this.isLocked = locked;
+
+    if (!locked) {
+      this.domElement.focus();
+    }
+
     this.onLockChange?.(locked);
   };
 
@@ -63,7 +69,7 @@ export class MouseLookController {
   };
 
   dispose(): void {
-    document.removeEventListener('click', this.handleDocumentClick);
+    this.domElement.removeEventListener('click', this.handleDocumentClick);
     document.removeEventListener('pointerlockchange', this.handlePointerLockChange);
     document.removeEventListener('mousemove', this.handleMouseMove);
   }
