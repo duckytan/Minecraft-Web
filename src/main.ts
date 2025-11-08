@@ -58,6 +58,14 @@ class Game {
     this.hud = initHUD();
     this.hotbar = initHotbar();
 
+    this.hud.overlay.addEventListener('click', (event) => {
+      event.preventDefault();
+      this.renderer.domElement.focus();
+      if (document.pointerLockElement !== this.renderer.domElement) {
+        this.renderer.domElement.requestPointerLock();
+      }
+    });
+
     this.keyboard = new KeyboardInput();
     new MouseLookController(this.renderer.domElement, this.camera, {
       onLockChange: (locked) => {
