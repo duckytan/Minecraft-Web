@@ -167,3 +167,94 @@ canvas {
   text-overflow: ellipsis;
   max-width: 100%;
 }
+
+/* 存档控制面板 */
+.save-controls {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 150;
+  padding: 12px;
+  background-color: rgba(0, 0, 0, 0.6);
+  border-radius: 8px;
+  backdrop-filter: blur(5px);
+}
+
+.save-controls button {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 4px;
+  background-color: rgba(255, 255, 255, 0.15);
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  min-width: 150px;
+}
+
+.save-controls button:hover:not(:disabled) {
+  background-color: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: translateY(-1px);
+}
+
+.save-controls button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.save-controls button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.save-button:hover:not(:disabled) {
+  background-color: rgba(76, 175, 80, 0.6);
+}
+
+.load-button:hover:not(:disabled) {
+  background-color: rgba(33, 150, 243, 0.6);
+}
+
+.delete-button:hover:not(:disabled) {
+  background-color: rgba(244, 67, 54, 0.6);
+}
+
+.save-status {
+  display: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 13px;
+  text-align: center;
+  animation: fadeIn 0.3s ease;
+}
+
+.save-status.success {
+  background-color: rgba(76, 175, 80, 0.8);
+  color: white;
+}
+
+.save-status.error {
+  background-color: rgba(244, 67, 54, 0.8);
+  color: white;
+}
+
+.save-status.info {
+  background-color: rgba(33, 150, 243, 0.8);
+  color: white;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

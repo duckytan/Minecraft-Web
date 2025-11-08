@@ -163,4 +163,22 @@ export class Player {
   getPosition(): THREE.Vector3 {
     return this.camera.position;
   }
+
+  getRotation(): { x: number; y: number } {
+    return {
+      x: this.camera.rotation.x,
+      y: this.camera.rotation.y
+    };
+  }
+
+  setPosition(x: number, y: number, z: number): void {
+    this.camera.position.set(x, y, z);
+    this.velocity.set(0, 0, 0);
+    this.isGrounded = false;
+  }
+
+  setRotation(x: number, y: number): void {
+    this.camera.rotation.x = x;
+    this.camera.rotation.y = y;
+  }
 }

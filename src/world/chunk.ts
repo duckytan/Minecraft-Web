@@ -59,6 +59,13 @@ export class Chunk {
   }
 
   /**
+   * 获取 Chunk 的方块数据副本
+   */
+  public getBlocksData(): Uint8Array {
+    return this.blocks.slice();
+  }
+
+  /**
    * 获取方块类型
    */
   public getBlock(x: number, y: number, z: number): BlockType {

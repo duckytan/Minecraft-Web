@@ -427,4 +427,11 @@ export class ChunkManager {
   public getLoadedChunkCount(): number {
     return this.chunks.size;
   }
+
+  /**
+   * 获取所有已加载的 Chunk
+   */
+  public getAllChunks(): Chunk[] {
+    return Array.from(this.chunks.values());
+  }
 }
