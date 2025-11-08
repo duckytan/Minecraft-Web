@@ -1,8 +1,12 @@
 # 网页版 Minecraft 游戏项目 · AI 全栈开发文档
 
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/your-username/web-minecraft)
+
 欢迎阅读本项目的权威文档体系。本仓库旨在指导 AI 团队在无人类干预的情况下，高质量地完成一款简化版网页 Minecraft 游戏的设计、实现、测试与交付。所有文档都围绕工程化流程构建，并保持互相引用，以确保信息一致、可追溯、易于自动化执行。
 
 > **提示**：所有旧版文档已原封不动收录于附录文档（A1/A2），满足“资料迁移后可溯源”的要求。
+
+> **🚀 快速部署**：点击上方的 "Deploy with Vercel" 按钮即可一键部署到 Vercel，几十秒后获得可访问的游戏网址！非技术用户推荐阅读 [DEPLOY_QUICK_START.md](DEPLOY_QUICK_START.md)，进阶配置请参见 [DEPLOYMENT.md](DEPLOYMENT.md)。
 
 ---
 
@@ -10,6 +14,8 @@
 
 | 文档编号 | 标题 | 关键内容 | 适用阶段 |
 | --- | --- | --- | --- |
+| GS | [如何快速体验游戏](HOW_TO_GET_STARTED.md) | 三种体验方式、操作说明、常见问题 | 所有用户 |
+| QS | [部署快速上手（非技术用户）](DEPLOY_QUICK_START.md) | 一键部署按钮、图文步骤、常见问题 | 上线部署 |
 | 00 | [快速开始与环境准备](docs/00_快速开始与环境准备.md) | 环境要求、安装步骤、AI执行 SOP、常见问题 | 项目初始化、环境搭建 |
 | 01 | [项目章程与需求总览](docs/01_项目章程与需求总览.md) | 项目目标、范围、干系人、成功指标 | 立项、里程碑规划 |
 | 02 | [详细需求规格说明书](docs/02_详细需求规格说明书.md) | 用例、功能/非功能需求、追踪矩阵 | 需求分析、需求验收 |
