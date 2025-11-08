@@ -1,0 +1,15 @@
+npm warn Unknown env config "python". This will stop working in the next major version of npm.
+
+> web-minecraft@0.1.0 dev
+> vite
+
+
+  VITE v5.4.21  ready in 235 ms
+
+  ➜  Local:   http://localhost:5173/
+  ➜  Network: use --host to expose
+  ➜  press h + enter to show help
+Error: spawn xdg-open ENOENT
+    at ChildProcess._handle.onexit (node:internal/child_process:285:19)
+    at onErrorNT (node:internal/child_process:483:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:82:21)
