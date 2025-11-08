@@ -83,12 +83,11 @@ class Game {
       this.renderer.domElement.focus();
     });
 
-    console.log('✅ Canvas 已聚焦，可以使用键盘控制');
-
     this.player = new Player(this.camera, this.keyboard);
 
     // 创建 ChunkManager（渲染距离4，即9x9个chunk）
     this.chunkManager = new ChunkManager(this.scene, 4);
+    this.player.setChunkManager(this.chunkManager);
 
     // 初始化 Web Worker（可选，用于异步地形生成）
     // 如果 Worker 初始化失败，会自动回退到同步生成
@@ -97,6 +96,9 @@ class Game {
     // 生成初始地形（使用 Perlin 噪声）
     // 参数：centerX, centerZ, radius, scale, heightMultiplier, baseHeight
     this.chunkManager.generateTerrain(0, 0, 4, 0.05, 12, 15);
+
+    // 将玩家设置到安全的初始位置（高于地形）
+    this.player.setPosition(0, 30, 0);
 
     // 创建 World 并集成 ChunkManager
     this.world = new World(this.scene, this.chunkManager);
@@ -155,9 +157,8 @@ class Game {
       this.lastChunkUpdate = 0;
     }
 
-    // 使用 ChunkManager 的碰撞检测
-    const colliders = this.chunkManager.getAllMeshes();
-    this.player.update(deltaTime, colliders);
+    // 更新玩家（不再传递 colliders，使用 ChunkManager 的方块检测）
+    this.player.update(deltaTime);
 
     this.renderer.render(this.scene, this.camera);
 

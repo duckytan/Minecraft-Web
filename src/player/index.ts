@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import { KeyboardInput } from '../input/keyboard';
 import { BoundingBox, checkCollision } from '../physics/collision';
+import { ChunkManager } from '../world/chunkManager';
+import { BlockType } from '../world/block';
 
 export interface PlayerConfig {
   moveSpeed?: number;
@@ -33,10 +35,16 @@ export class Player {
 
   private isGrounded = false;
 
+  private chunkManager: ChunkManager | null = null;
+
   constructor(camera: THREE.PerspectiveCamera, keyboard: KeyboardInput, config?: PlayerConfig) {
     this.camera = camera;
     this.keyboard = keyboard;
     this.config = { ...DEFAULT_CONFIG, ...config };
+  }
+
+  setChunkManager(chunkManager: ChunkManager): void {
+    this.chunkManager = chunkManager;
   }
 
   getBoundingBox(): BoundingBox {
@@ -50,7 +58,7 @@ export class Player {
     );
   }
 
-  update(deltaTime: number, colliders: THREE.Object3D[]): void {
+  update(deltaTime: number): void {
     const moveSpeed =
       this.config.moveSpeed *
       (this.keyboard.isSprint() ? this.config.sprintMultiplier : 1) *
@@ -89,11 +97,11 @@ export class Player {
       const horizontalMovement = new THREE.Vector3(moveDirection.x, 0, moveDirection.z);
 
       if (horizontalMovement.x !== 0) {
-        this.applyMovement(new THREE.Vector3(horizontalMovement.x, 0, 0), colliders, 'x');
+        this.applyMovement(new THREE.Vector3(horizontalMovement.x, 0, 0), 'x');
       }
 
       if (horizontalMovement.z !== 0) {
-        this.applyMovement(new THREE.Vector3(0, 0, horizontalMovement.z), colliders, 'z');
+        this.applyMovement(new THREE.Vector3(0, 0, horizontalMovement.z), 'z');
       }
     }
 
@@ -105,59 +113,64 @@ export class Player {
     this.velocity.y += this.config.gravity * deltaTime;
 
     const verticalMovement = new THREE.Vector3(0, this.velocity.y * deltaTime, 0);
-    this.applyMovement(verticalMovement, colliders, 'y');
+    this.applyMovement(verticalMovement, 'y');
   }
 
-  private applyMovement(
-    movement: THREE.Vector3,
-    colliders: THREE.Object3D[],
-    axis: 'x' | 'y' | 'z'
-  ): void {
+  private applyMovement(movement: THREE.Vector3, axis: 'x' | 'y' | 'z'): void {
+    if (!this.chunkManager) {
+      // 如果没有 ChunkManager，直接移动（向后兼容）
+      this.camera.position.add(movement);
+      if (axis === 'y') {
+        this.isGrounded = false;
+      }
+      return;
+    }
+
     const oldPosition = this.camera.position.clone();
     this.camera.position.add(movement);
 
     const playerBox = this.getBoundingBox();
 
-    for (const collider of colliders) {
-      const blockBox = this.getBlockBoundingBox(collider);
-      const collision = checkCollision(playerBox, blockBox);
+    // 检查玩家周围的方块
+    const minX = Math.floor(playerBox.min.x);
+    const maxX = Math.ceil(playerBox.max.x);
+    const minY = Math.floor(playerBox.min.y);
+    const maxY = Math.ceil(playerBox.max.y);
+    const minZ = Math.floor(playerBox.min.z);
+    const maxZ = Math.ceil(playerBox.max.z);
 
-      if (collision.collided) {
-        this.camera.position.copy(oldPosition);
+    for (let x = minX; x <= maxX; x++) {
+      for (let y = minY; y <= maxY; y++) {
+        for (let z = minZ; z <= maxZ; z++) {
+          const blockType = this.chunkManager.getBlock(x, y, z);
+          if (blockType !== BlockType.AIR) {
+            const blockBox = new BoundingBox(
+              new THREE.Vector3(x - 0.5, y - 0.5, z - 0.5),
+              new THREE.Vector3(x + 0.5, y + 0.5, z + 0.5)
+            );
 
-        if (axis === 'y') {
-          if (this.velocity.y < 0) {
-            this.isGrounded = true;
+            const collision = checkCollision(playerBox, blockBox);
+
+            if (collision.collided) {
+              this.camera.position.copy(oldPosition);
+
+              if (axis === 'y') {
+                if (this.velocity.y < 0) {
+                  this.isGrounded = true;
+                }
+                this.velocity.y = 0;
+              }
+
+              return;
+            }
           }
-          this.velocity.y = 0;
         }
-
-        break;
       }
     }
-  }
 
-  private getBlockBoundingBox(block: THREE.Object3D): BoundingBox {
-    const geometry = (block as THREE.Mesh).geometry;
-
-    if (geometry && geometry.boundingBox) {
-      geometry.computeBoundingBox();
-      const box = geometry.boundingBox!.clone();
-      box.applyMatrix4(block.matrixWorld);
-
-      return new BoundingBox(
-        new THREE.Vector3(box.min.x, box.min.y, box.min.z),
-        new THREE.Vector3(box.max.x, box.max.y, box.max.z)
-      );
+    if (axis === 'y') {
+      this.isGrounded = false;
     }
-
-    const pos = block.position;
-    const size = 0.5;
-
-    return new BoundingBox(
-      new THREE.Vector3(pos.x - size, pos.y - size, pos.z - size),
-      new THREE.Vector3(pos.x + size, pos.y + size, pos.z + size)
-    );
   }
 
   getPosition(): THREE.Vector3 {
