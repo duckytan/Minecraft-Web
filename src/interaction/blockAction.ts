@@ -7,6 +7,7 @@ import { BoundingBox } from '../physics/collision';
 export interface BlockActionOptions {
   maxDistance?: number;
   currentBlockType?: BlockType;
+  getSelectedBlockType?: () => BlockType;
 }
 
 export class BlockActionController {
@@ -22,6 +23,8 @@ export class BlockActionController {
 
   private readonly playerBoundingBox: () => BoundingBox;
 
+  private readonly getSelectedBlockType?: () => BlockType;
+
   constructor(
     world: World,
     camera: THREE.PerspectiveCamera,
@@ -31,7 +34,9 @@ export class BlockActionController {
     this.world = world;
     this.camera = camera;
     this.raycast = new RaycastController(options?.maxDistance || 5);
-    this.currentBlockType = options?.currentBlockType || BlockType.DIRT;
+    this.getSelectedBlockType = options?.getSelectedBlockType;
+    this.currentBlockType =
+      options?.currentBlockType ?? (this.getSelectedBlockType ? this.getSelectedBlockType() : BlockType.DIRT);
     this.playerBoundingBox = playerBoundingBox;
 
     this.setupEventListeners();
@@ -54,13 +59,21 @@ export class BlockActionController {
       event.preventDefault();
     });
 
-    window.addEventListener('keydown', (event: KeyboardEvent) => {
-      const key = parseInt(event.key, 10);
-      if (key >= 1 && key <= 5) {
-        this.setCurrentBlockType(key);
-      }
-    });
+    if (!this.getSelectedBlockType) {
+      window.addEventListener('keydown', this.handleKeyDownForSelection);
+    }
   }
+
+  private readonly handleKeyDownForSelection = (event: KeyboardEvent): void => {
+    const key = parseInt(event.key, 10);
+    if (Number.isNaN(key)) {
+      return;
+    }
+
+    if (key >= 1 && key <= 5) {
+      this.setCurrentBlockType(key);
+    }
+  };
 
   private setCurrentBlockType(slot: number): void {
     const blockTypes = [BlockType.GRASS, BlockType.DIRT, BlockType.STONE, BlockType.WOOD, BlockType.LEAVES];
@@ -96,7 +109,8 @@ export class BlockActionController {
       return;
     }
 
-    this.world.setBlock(newBlockPos.x, newBlockPos.y, newBlockPos.z, this.currentBlockType);
+    const blockType = this.getSelectedBlockType ? this.getSelectedBlockType() : this.currentBlockType;
+    this.world.setBlock(newBlockPos.x, newBlockPos.y, newBlockPos.z, blockType);
   }
 
   private wouldCollideWithPlayer(blockPos: THREE.Vector3): boolean {

@@ -10,6 +10,7 @@ import { MouseLookController } from './input/mouse';
 import { Player } from './player';
 import { BlockActionController } from './interaction/blockAction';
 import { initHUD } from './ui/hud';
+import { initHotbar } from './ui/hotbar';
 
 class Game {
   private readonly scene: THREE.Scene;
@@ -30,6 +31,8 @@ class Game {
 
   private readonly hud: ReturnType<typeof initHUD>;
 
+  private readonly hotbar: ReturnType<typeof initHotbar>;
+
   private lastChunkUpdate = 0;
 
   private readonly chunkUpdateInterval = 0.5; // 每0.5秒更新一次
@@ -49,6 +52,7 @@ class Game {
     app.appendChild(this.renderer.domElement);
 
     this.hud = initHUD();
+    this.hotbar = initHotbar();
 
     this.keyboard = new KeyboardInput();
     new MouseLookController(this.renderer.domElement, this.camera, {
@@ -73,7 +77,10 @@ class Game {
     // 创建 World 并集成 ChunkManager
     this.world = new World(this.scene, this.chunkManager);
 
-    new BlockActionController(this.world, this.camera, () => this.player.getBoundingBox());
+    new BlockActionController(this.world, this.camera, () => this.player.getBoundingBox(), {
+      currentBlockType: this.hotbar.getSelectedBlock(),
+      getSelectedBlockType: () => this.hotbar.getSelectedBlock()
+    });
 
     this.setupEventListeners();
 
@@ -84,7 +91,7 @@ class Game {
     console.log('  - Shift: 加速');
     console.log('  - 左键: 破坏方块');
     console.log('  - 右键: 放置方块');
-    console.log('  - 1-5: 切换方块类型');
+    console.log('  - 1-9: 切换方块类型（方块选择栏）');
     console.log(`📦 已加载 ${this.chunkManager.getLoadedChunkCount()} 个 Chunk`);
   }
 
