@@ -11,6 +11,8 @@ import { Player } from './player';
 import { BlockActionController } from './interaction/blockAction';
 import { initHUD } from './ui/hud';
 import { initHotbar } from './ui/hotbar';
+import { SaveManager } from './save/saveManager';
+import { initSaveControls } from './ui/saveControls';
 
 class Game {
   private readonly scene: THREE.Scene;
@@ -32,6 +34,10 @@ class Game {
   private readonly hud: ReturnType<typeof initHUD>;
 
   private readonly hotbar: ReturnType<typeof initHotbar>;
+
+  private readonly saveManager: SaveManager;
+
+  private readonly saveControls: ReturnType<typeof initSaveControls>;
 
   private lastChunkUpdate = 0;
 
@@ -82,6 +88,10 @@ class Game {
       getSelectedBlockType: () => this.hotbar.getSelectedBlock()
     });
 
+    // 初始化存档系统
+    this.saveManager = new SaveManager(this.chunkManager, this.player);
+    this.saveControls = initSaveControls(this.saveManager);
+
     this.setupEventListeners();
 
     console.log('✅ 游戏初始化完成（Chunk系统已启用）');
@@ -92,7 +102,14 @@ class Game {
     console.log('  - 左键: 破坏方块');
     console.log('  - 右键: 放置方块');
     console.log('  - 1-9: 切换方块类型（方块选择栏）');
+    console.log('  - F5: 保存游戏');
+    console.log('  - F9: 加载游戏');
     console.log(`📦 已加载 ${this.chunkManager.getLoadedChunkCount()} 个 Chunk`);
+
+    // 检查是否有存档
+    if (this.saveManager.hasSave()) {
+      console.log('💾 检测到存档，按 F9 加载');
+    }
   }
 
   private setupEventListeners(): void {
