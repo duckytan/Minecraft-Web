@@ -85,6 +85,11 @@ class Game {
 
     this.player = new Player(this.camera, this.keyboard);
 
+    // 监听飞行模式变化，更新 HUD
+    this.keyboard.onFlightToggle(() => {
+      this.hud.setFlightMode(this.player.isFlightMode());
+    });
+
     // 创建 ChunkManager（渲染距离4，即9x9个chunk）
     this.chunkManager = new ChunkManager(this.scene, 4);
     this.player.setChunkManager(this.chunkManager);
@@ -117,8 +122,9 @@ class Game {
     console.log('✅ 游戏初始化完成（Chunk系统已启用）');
     console.log('🎮 操作提示：');
     console.log('  - WASD: 移动');
-    console.log('  - Space: 跳跃');
-    console.log('  - Shift: 加速');
+    console.log('  - Space: 跳跃 / 飞行上升');
+    console.log('  - Shift: 加速 / 飞行下降');
+    console.log('  - F: 切换飞行模式');
     console.log('  - 左键: 破坏方块');
     console.log('  - 右键: 放置方块');
     console.log('  - 1-9: 切换方块类型（方块选择栏）');

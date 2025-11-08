@@ -12,6 +12,12 @@ export interface PlayerConfig {
   width?: number;
   height?: number;
   depth?: number;
+  // 飞行模式参数
+  flightSpeed?: number;
+  flightAcceleration?: number;
+  flightMaxSpeed?: number;
+  flightDeceleration?: number;
+  flightVerticalSpeed?: number;
 }
 
 const DEFAULT_CONFIG: Required<PlayerConfig> = {
@@ -21,7 +27,13 @@ const DEFAULT_CONFIG: Required<PlayerConfig> = {
   gravity: -25,
   width: 0.6,
   height: 1.8,
-  depth: 0.6
+  depth: 0.6,
+  // 飞行模式默认参数
+  flightSpeed: 6,
+  flightAcceleration: 2.5,
+  flightMaxSpeed: 24,
+  flightDeceleration: 3,
+  flightVerticalSpeed: 8
 };
 
 export class Player {
@@ -33,6 +45,12 @@ export class Player {
 
   private velocity = new THREE.Vector3();
 
+  private flightVelocity = new THREE.Vector3();
+
+  private flightThrust = 0;
+
+  private isFlying = false;
+
   private isGrounded = false;
 
   private chunkManager: ChunkManager | null = null;
@@ -41,6 +59,10 @@ export class Player {
     this.camera = camera;
     this.keyboard = keyboard;
     this.config = { ...DEFAULT_CONFIG, ...config };
+
+    this.keyboard.onFlightToggle(() => {
+      this.toggleFlightMode();
+    });
   }
 
   setChunkManager(chunkManager: ChunkManager): void {
@@ -59,6 +81,17 @@ export class Player {
   }
 
   update(deltaTime: number): void {
+    if (this.isFlying) {
+      this.updateFlying(deltaTime);
+    } else {
+      this.updateWalking(deltaTime);
+    }
+  }
+
+  /**
+   * 行走模式更新
+   */
+  private updateWalking(deltaTime: number): void {
     const moveSpeed =
       this.config.moveSpeed *
       (this.keyboard.isSprint() ? this.config.sprintMultiplier : 1) *
@@ -116,6 +149,116 @@ export class Player {
     this.applyMovement(verticalMovement, 'y');
   }
 
+  /**
+   * 飞行模式更新（带加速度）
+   */
+  private updateFlying(deltaTime: number): void {
+    const forward = new THREE.Vector3();
+    const right = new THREE.Vector3();
+
+    this.camera.getWorldDirection(forward);
+    forward.y = 0;
+    if (forward.lengthSq() === 0) {
+      forward.set(0, 0, -1);
+    }
+    forward.normalize();
+    right.crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
+
+    const horizontalDirection = new THREE.Vector3();
+
+    if (this.keyboard.isForward()) {
+      horizontalDirection.add(forward);
+    }
+
+    if (this.keyboard.isBackward()) {
+      horizontalDirection.sub(forward);
+    }
+
+    if (this.keyboard.isLeft()) {
+      horizontalDirection.sub(right);
+    }
+
+    if (this.keyboard.isRight()) {
+      horizontalDirection.add(right);
+    }
+
+    const hasHorizontalInput = horizontalDirection.lengthSq() > 0;
+    if (hasHorizontalInput) {
+      horizontalDirection.normalize();
+    }
+
+    const verticalInput = (this.keyboard.isJump() ? 1 : 0) - (this.keyboard.isDescend() ? 1 : 0);
+    const hasVerticalInput = verticalInput !== 0;
+    const hasInput = hasHorizontalInput || hasVerticalInput;
+
+    if (hasInput) {
+      this.flightThrust = Math.min(1, this.flightThrust + this.config.flightAcceleration * deltaTime);
+      const targetSpeed = THREE.MathUtils.lerp(
+        this.config.flightSpeed,
+        this.config.flightMaxSpeed,
+        this.flightThrust
+      );
+
+      const desiredVelocity = new THREE.Vector3();
+
+      if (hasHorizontalInput) {
+        desiredVelocity.addScaledVector(horizontalDirection, targetSpeed);
+      }
+
+      desiredVelocity.y = verticalInput * this.config.flightVerticalSpeed;
+
+      const lerpFactor = Math.min(1, this.config.flightAcceleration * deltaTime);
+      this.flightVelocity.lerp(desiredVelocity, lerpFactor);
+    } else {
+      this.flightThrust = Math.max(0, this.flightThrust - this.config.flightDeceleration * deltaTime);
+      const damping = Math.max(0, 1 - this.config.flightDeceleration * deltaTime);
+      this.flightVelocity.multiplyScalar(damping);
+      if (this.flightVelocity.length() < 0.05) {
+        this.flightVelocity.set(0, 0, 0);
+      }
+    }
+
+    const movement = this.flightVelocity.clone().multiplyScalar(deltaTime);
+
+    if (movement.x !== 0) {
+      this.applyMovement(new THREE.Vector3(movement.x, 0, 0), 'x');
+    }
+
+    if (movement.y !== 0) {
+      this.applyMovement(new THREE.Vector3(0, movement.y, 0), 'y');
+    }
+
+    if (movement.z !== 0) {
+      this.applyMovement(new THREE.Vector3(0, 0, movement.z), 'z');
+    }
+  }
+
+  /**
+   * 切换飞行模式
+   */
+  toggleFlightMode(): void {
+    this.isFlying = !this.isFlying;
+
+    if (this.isFlying) {
+      // 进入飞行模式，重置速度
+      this.velocity.set(0, 0, 0);
+      this.flightVelocity.set(0, 0, 0);
+      this.isGrounded = false;
+    } else {
+      // 退出飞行模式，重置飞行速度
+      this.flightVelocity.set(0, 0, 0);
+    }
+
+    console.log(`飞行模式: ${this.isFlying ? '开启' : '关闭'}`);
+  }
+
+  /**
+   * 获取飞行模式状态
+   */
+  isFlightMode(): boolean {
+    return this.isFlying;
+  }
+
   private applyMovement(movement: THREE.Vector3, axis: 'x' | 'y' | 'z'): void {
     if (!this.chunkManager) {
       // 如果没有 ChunkManager，直接移动（向后兼容）
@@ -123,6 +266,12 @@ export class Player {
       if (axis === 'y') {
         this.isGrounded = false;
       }
+      return;
+    }
+
+    // 飞行模式下不检测碰撞
+    if (this.isFlying) {
+      this.camera.position.add(movement);
       return;
     }
 
