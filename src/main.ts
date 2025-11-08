@@ -37,8 +37,6 @@ class Game {
 
   private readonly saveManager: SaveManager;
 
-  private readonly saveControls: ReturnType<typeof initSaveControls>;
-
   private lastChunkUpdate = 0;
 
   private readonly chunkUpdateInterval = 0.5; // 每0.5秒更新一次
@@ -90,7 +88,7 @@ class Game {
 
     // 初始化存档系统
     this.saveManager = new SaveManager(this.chunkManager, this.player);
-    this.saveControls = initSaveControls(this.saveManager);
+    initSaveControls(this.saveManager);
 
     this.setupEventListeners();
 
