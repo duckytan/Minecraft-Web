@@ -26,6 +26,8 @@
 - 原始文档存档（A1/A2附录文档）
 - 集成 Vitest 测试框架与覆盖率配置
 - 新增核心模块单元测试（碰撞检测、方块系统、地形生成、世界管理）
+- 新增 Perlin 噪声地形生成（simplex-noise，OPT-03） ✨
+- 新增地形生成 Web Worker（异步加载，OPT-04） ✨
 
 ### 变更
 - README.md 重构为导航型文档，整合所有文档链接
@@ -44,7 +46,7 @@
 - ✅ UI-02: 操作提示（首次启动）
 - ✅ TEST-01: 核心模块单元测试（覆盖率 98.91%）
 
-### 新增功能（Phase 2 - 性能优化）
+### 新增功能（Phase 2 - 性能优化）✅
 - ✅ OPT-01: Chunk 系统（16x16x64 分块加载与管理）
   - 实现 Chunk 类，支持 16x16x64 方块区域管理
   - 实现 ChunkManager 管理所有 Chunk 生命周期
@@ -53,9 +55,25 @@
   - 使用 BufferGeometry 合并几何体，减少 Draw Call
   - 新增 21 个 Chunk 系统单元测试，全部通过
 
-### 待完成任务（Phase 2 - 性能优化）
-- OPT-03: Perlin 噪声地形（起伏地形）
-- OPT-04: Web Worker 地形生成（异步处理）
+- ✅ OPT-02: 面剔除优化（已包含在 OPT-01 中）
+
+- ✅ OPT-03: Perlin 噪声地形生成
+  - 安装 simplex-noise 库（v4.0.3）
+  - 实现 ChunkManager.generateTerrain() 方法
+  - 使用 Perlin 2D 噪声生成自然起伏地形
+  - 支持参数化配置（scale, heightMultiplier, baseHeight）
+  - 自动生成草地-泥土-石头分层结构
+  - 新增 2 个单元测试验证地形生成效果
+
+- ✅ OPT-04: Web Worker 异步地形生成
+  - 创建 terrain.worker.ts 实现异步地形生成
+  - 实现主线程与 Worker 通信机制
+  - ArrayBuffer 转移优化，零拷贝传输
+  - Promise.all 并发处理多个 Chunk
+  - 完善的错误处理与降级策略（Worker 失败自动回退）
+  - 动态 Chunk 加载集成到玩家移动系统
+
+**Phase 2 性能优化 100% 完成！**
 
 ### 已实现功能
 - ✨ 完整的第一人称控制系统（WASD移动、空格跳跃、Shift加速）
