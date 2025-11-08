@@ -90,9 +90,30 @@ export function initSaveControls(saveManager: SaveManager): SaveControls {
     }
   };
 
-  saveButton.addEventListener('click', handleSave);
-  loadButton.addEventListener('click', handleLoad);
-  deleteButton.addEventListener('click', handleDelete);
+  saveButton.addEventListener('click', (e) => {
+    handleSave();
+    (e.target as HTMLButtonElement).blur();
+    const canvas = document.querySelector('canvas');
+    if (canvas) {
+      (canvas as HTMLCanvasElement).focus();
+    }
+  });
+  loadButton.addEventListener('click', (e) => {
+    handleLoad();
+    (e.target as HTMLButtonElement).blur();
+    const canvas = document.querySelector('canvas');
+    if (canvas) {
+      (canvas as HTMLCanvasElement).focus();
+    }
+  });
+  deleteButton.addEventListener('click', (e) => {
+    handleDelete();
+    (e.target as HTMLButtonElement).blur();
+    const canvas = document.querySelector('canvas');
+    if (canvas) {
+      (canvas as HTMLCanvasElement).focus();
+    }
+  });
   window.addEventListener('keydown', handleKeyDown);
 
   // 更新按钮状态
