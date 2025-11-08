@@ -62,8 +62,14 @@ class Game {
     new MouseLookController(this.renderer.domElement, this.camera, {
       onLockChange: (locked) => {
         this.hud.setPointerLockState(locked);
+        if (!locked) {
+          this.renderer.domElement.focus();
+        }
       }
     });
+
+    this.renderer.domElement.focus();
+    console.log('✅ Canvas 已聚焦，可以使用键盘控制');
 
     this.player = new Player(this.camera, this.keyboard);
 
