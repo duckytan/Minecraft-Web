@@ -11,5 +11,5 @@ export interface TerrainConfig {
 export interface TerrainData {
   chunkX: number;
   chunkZ: number;
-  blocks: ArrayBuffer;
+  blocks: ArrayBufferLike;
 }

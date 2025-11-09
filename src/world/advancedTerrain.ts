@@ -152,7 +152,7 @@ export class AdvancedTerrainGenerator {
     x: number,
     groundY: number,
     z: number,
-    heightMap: number[][]
+    _heightMap: number[][]
   ): void {
     const treeHeight = 4 + Math.floor(Math.random() * 2); // 4-5格高
     const trunkTop = groundY + treeHeight;

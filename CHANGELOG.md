@@ -86,10 +86,33 @@
   - 新增 15 个 Vitest 单元测试，全部通过
   - 新增方块栏 CSS 样式（响应式设计）
 
-### 测试统计（2024年11月8日）
-- 测试文件：8 个
-- 测试用例：78 个（全部通过 ✅）
-- 覆盖率：98.91%+（语句覆盖率）
+- ✅ FEAT-02: 本地存档（LocalStorage）
+  - 创建 `src/save/saveManager.ts` 存档管理器（247 行）
+  - 创建 `src/ui/saveControls.ts` 存档控制 UI（152 行）
+  - 实现保存/加载/删除存档功能
+  - 支持 F5/F9 快捷键操作
+  - 版本控制与数据验证
+  - 右上角存档控制面板 UI
+  - 新增 20 个 Vitest 单元测试，全部通过
+
+- ✅ FEAT-03: IndexedDB 存档（大型世界）
+  - 创建 `src/save/indexedDBStorage.ts` IndexedDB 存储引擎（180 行）
+  - 实现批量异步 Chunk 保存/加载
+  - 支持 > 10MB 大型世界存储
+  - 内存回退机制（IndexedDB 不可用时）
+  - 数据完整性保护（深拷贝）
+  - 新增 16 个 Vitest 单元测试，全部通过
+
+### 测试修复
+- ✅ Canvas Mock 实现（jsdom 兼容性）
+  - 创建 `src/__tests__/setup.ts` Canvas 2D Mock
+  - 修复 26 个纹理相关测试
+  - 配置 vitest.config.ts setupFiles
+
+### 测试统计（2024年11月9日）
+- 测试文件：10 个（+2 个存档系统测试，+1 个 setup.ts）
+- 测试用例：99 个（全部通过 ✅）
+- 覆盖率：98%+（语句覆盖率）
 - 测试框架：Vitest 4.0.8
 - 测试环境：jsdom 27.1.0
 

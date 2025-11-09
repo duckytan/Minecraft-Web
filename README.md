@@ -68,9 +68,9 @@
 
 - `npm run test`：运行 Vitest 单元测试（watch 模式）。
 - `npm run test:coverage`：运行全部测试并生成 v8 覆盖率报告。
-- 覆盖率目标：语句 ≥ 60%，当前已达 98.91%。
+- 覆盖率目标：语句 ≥ 60%，当前已达 98.9%+。
 - 所有测试位于 `src/__tests__/` 目录，可根据模块拆分新增。
-- 测试统计：6 个测试文件，41 个测试用例，全部通过 ✅
+- 测试统计：10 个测试文件，99 个测试用例，全部通过 ✅
 
 ---
 
@@ -78,13 +78,19 @@
 
 当前已完成：
 - ✅ Phase 1: MVP 基础功能（100%，10/10 任务）
-- 🚧 Phase 2: 性能优化（50%，2/4 任务）
+- ✅ Phase 2: 性能优化（100%，4/4 任务）
   - ✅ OPT-01: Chunk 系统（16x16x64 分块加载）
   - ✅ OPT-02: 面剔除优化（包含在 Chunk 系统中）
-  - ⬜ OPT-03: Perlin 噪声地形
-  - ⬜ OPT-04: Web Worker 地形生成
+  - ✅ OPT-03: Perlin 噪声地形
+  - ✅ OPT-04: Web Worker 地形生成
+- 🚧 Phase 3: 功能增强（75%，3/4 任务）
+  - ✅ FEAT-01: 方块选择栏 UI
+  - ✅ FEAT-02: 本地存档（LocalStorage）
+  - ✅ FEAT-03: IndexedDB 存档（大型世界）
+  - ⬜ FEAT-04: 音效系统（可选）
+- ⬜ Phase 4: 自动化与交付（0%，0/3 任务）
 
-详细进度请查看 [PROGRESS.md](PROGRESS.md) 和 [DEVELOPMENT_REPORT.md](DEVELOPMENT_REPORT.md)。
+详细进度请查看 [PROGRESS.md](PROGRESS.md) 和 [DEVELOPMENT_REPORT_PHASE3_FINAL.md](DEVELOPMENT_REPORT_PHASE3_FINAL.md)。
 
 ---
 
