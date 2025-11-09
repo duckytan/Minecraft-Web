@@ -28,6 +28,10 @@ export class World {
   }
 
   removeBlock(x: number, y: number, z: number): null {
+    const current = this.chunkManager.getBlock(x, y, z);
+    if (current === BlockType.BEDROCK) {
+      return null;
+    }
     this.chunkManager.setBlock(x, y, z, BlockType.AIR);
     return null;
   }

@@ -45,6 +45,12 @@ export class BlockTextureGenerator {
       case BlockType.LEAVES:
         this.generateLeavesTexture(ctx);
         break;
+      case BlockType.BEDROCK:
+        this.generateBedrockTexture(ctx, face);
+        break;
+      case BlockType.WATER:
+        this.generateWaterTexture(ctx);
+        break;
       default:
         // 默认纯色
         ctx.fillStyle = '#ffffff';
@@ -269,6 +275,63 @@ export class BlockTextureGenerator {
           b: parseInt(result[3], 16)
         }
       : null;
+  }
+
+  /**
+   * 基岩纹理
+   * - 深黑色基础 + 细微裂纹
+   */
+  private static generateBedrockTexture(ctx: CanvasRenderingContext2D, face: string): void {
+    ctx.fillStyle = '#1a1a1a';
+    ctx.fillRect(0, 0, TEXTURE_SIZE, TEXTURE_SIZE);
+
+    // 添加深浅变化（非常细微）
+    for (let i = 0; i < 30; i++) {
+      const x = Math.floor(Math.random() * TEXTURE_SIZE);
+      const y = Math.floor(Math.random() * TEXTURE_SIZE);
+      const brightness = Math.random() * 20 - 10;
+      const color = this.adjustBrightness('#1a1a1a', brightness);
+      ctx.fillStyle = color;
+      ctx.fillRect(x, y, 1, 1);
+    }
+
+    // 添加裂纹
+    ctx.strokeStyle = 'rgba(100, 100, 100, 0.3)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 8; i++) {
+      ctx.beginPath();
+      const startX = Math.random() * TEXTURE_SIZE;
+      const startY = Math.random() * TEXTURE_SIZE;
+      ctx.moveTo(startX, startY);
+      const endX = startX + (Math.random() - 0.5) * 6;
+      const endY = startY + (Math.random() - 0.5) * 6;
+      ctx.lineTo(endX, endY);
+      ctx.stroke();
+    }
+  }
+
+  /**
+   * 水纹理
+   * - 蓝色基础 + 波纹效果
+   */
+  private static generateWaterTexture(ctx: CanvasRenderingContext2D): void {
+    ctx.fillStyle = '#4a90e2';
+    ctx.fillRect(0, 0, TEXTURE_SIZE, TEXTURE_SIZE);
+
+    // 添加波纹（水平线）
+    for (let y = 0; y < TEXTURE_SIZE; y += 2) {
+      const brightness = Math.sin(y * 0.5) * 15;
+      ctx.fillStyle = this.adjustBrightness('#4a90e2', brightness);
+      ctx.fillRect(0, y, TEXTURE_SIZE, 1);
+    }
+
+    // 添加随机亮点（反光效果）
+    for (let i = 0; i < 20; i++) {
+      const x = Math.floor(Math.random() * TEXTURE_SIZE);
+      const y = Math.floor(Math.random() * TEXTURE_SIZE);
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+      ctx.fillRect(x, y, 1, 1);
+    }
   }
 
   /**

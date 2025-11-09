@@ -53,6 +53,8 @@ export class Player {
 
   private isGrounded = false;
 
+  private isInWater = false;
+
   private chunkManager: ChunkManager | null = null;
 
   constructor(camera: THREE.PerspectiveCamera, keyboard: KeyboardInput, config?: PlayerConfig) {
@@ -83,9 +85,111 @@ export class Player {
   update(deltaTime: number): void {
     if (this.isFlying) {
       this.updateFlying(deltaTime);
+      return;
+    }
+
+    this.isInWater = this.checkWaterState();
+
+    if (this.isInWater) {
+      this.updateSwimming(deltaTime);
     } else {
       this.updateWalking(deltaTime);
     }
+  }
+
+  /**
+   * 检查玩家是否在水中
+   */
+  private checkWaterState(): boolean {
+    if (!this.chunkManager) {
+      return false;
+    }
+
+    const box = this.getBoundingBox();
+    const minX = Math.floor(box.min.x);
+    const maxX = Math.ceil(box.max.x);
+    const minY = Math.floor(box.min.y);
+    const maxY = Math.ceil(box.max.y);
+    const minZ = Math.floor(box.min.z);
+    const maxZ = Math.ceil(box.max.z);
+
+    for (let x = minX; x <= maxX; x++) {
+      for (let y = minY; y <= maxY; y++) {
+        for (let z = minZ; z <= maxZ; z++) {
+          if (this.chunkManager.getBlock(x, y, z) === BlockType.WATER) {
+            return true;
+          }
+        }
+      }
+    }
+
+    return false;
+  }
+
+  /**
+   * 游泳模式更新
+   */
+  private updateSwimming(deltaTime: number): void {
+    const swimSpeed = this.config.moveSpeed * 0.7 * deltaTime; // 水中移动速度较慢
+
+    const forward = new THREE.Vector3();
+    const right = new THREE.Vector3();
+
+    this.camera.getWorldDirection(forward);
+    forward.y = 0;
+    forward.normalize();
+    right.crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
+
+    const moveDirection = new THREE.Vector3();
+
+    if (this.keyboard.isForward()) {
+      moveDirection.add(forward);
+    }
+
+    if (this.keyboard.isBackward()) {
+      moveDirection.sub(forward);
+    }
+
+    if (this.keyboard.isLeft()) {
+      moveDirection.sub(right);
+    }
+
+    if (this.keyboard.isRight()) {
+      moveDirection.add(right);
+    }
+
+    if (moveDirection.length() > 0) {
+      moveDirection.normalize();
+      moveDirection.multiplyScalar(swimSpeed);
+
+      const horizontalMovement = new THREE.Vector3(moveDirection.x, 0, moveDirection.z);
+
+      if (horizontalMovement.x !== 0) {
+        this.applyMovement(new THREE.Vector3(horizontalMovement.x, 0, 0), 'x');
+      }
+
+      if (horizontalMovement.z !== 0) {
+        this.applyMovement(new THREE.Vector3(0, 0, horizontalMovement.z), 'z');
+      }
+    }
+
+    // 水中垂直移动
+    const verticalSpeed = 3;
+    if (this.keyboard.isJump()) {
+      // 向上游
+      this.velocity.y = verticalSpeed;
+    } else if (this.keyboard.isDescend()) {
+      // 向下游
+      this.velocity.y = -verticalSpeed;
+    } else {
+      // 浮力效果（缓慢上升）
+      this.velocity.y = Math.min(1, this.velocity.y + 0.5 * deltaTime);
+    }
+
+    // 应用垂直移动（带阻力）
+    this.velocity.y *= 0.95; // 水中阻力
+    const verticalMovement = new THREE.Vector3(0, this.velocity.y * deltaTime, 0);
+    this.applyMovement(verticalMovement, 'y');
   }
 
   /**
@@ -292,7 +396,7 @@ export class Player {
       for (let y = minY; y <= maxY; y++) {
         for (let z = minZ; z <= maxZ; z++) {
           const blockType = this.chunkManager.getBlock(x, y, z);
-          if (blockType !== BlockType.AIR) {
+          if (blockType !== BlockType.AIR && blockType !== BlockType.WATER) {
             const blockBox = new BoundingBox(
               new THREE.Vector3(x - 0.5, y - 0.5, z - 0.5),
               new THREE.Vector3(x + 0.5, y + 0.5, z + 0.5)
@@ -324,6 +428,10 @@ export class Player {
 
   getPosition(): THREE.Vector3 {
     return this.camera.position;
+  }
+
+  isSwimming(): boolean {
+    return this.isInWater && !this.isFlying;
   }
 
   getRotation(): { x: number; y: number } {

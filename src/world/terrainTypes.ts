@@ -1,11 +1,11 @@
+import type { AdvancedTerrainConfig } from './advancedTerrain';
+
 export interface TerrainConfig {
   chunkX: number;
   chunkZ: number;
   chunkSize: number;
   chunkHeight: number;
-  scale: number;
-  heightMultiplier: number;
-  baseHeight: number;
+  terrainConfig: AdvancedTerrainConfig;
 }
 
 export interface TerrainData {

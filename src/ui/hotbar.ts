@@ -21,9 +21,9 @@ const HOTBAR_SLOTS: HotbarSlot[] = [
   { blockType: BlockType.STONE, name: '石头', color: '#7a7a7a' },
   { blockType: BlockType.WOOD, name: '木头', color: '#8b5a2b' },
   { blockType: BlockType.LEAVES, name: '树叶', color: '#3d8b3d' },
+  { blockType: BlockType.BEDROCK, name: '基岩', color: '#1a1a1a' },
+  { blockType: BlockType.WATER, name: '水', color: '#4a90e2' },
   { blockType: BlockType.STONE, name: '石头', color: '#7a7a7a' },
-  { blockType: BlockType.WOOD, name: '木头', color: '#8b5a2b' },
-  { blockType: BlockType.DIRT, name: '泥土', color: '#8b6f47' },
   { blockType: BlockType.GRASS, name: '草方块', color: '#5a9e3d' }
 ];
 
