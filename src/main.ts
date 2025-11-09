@@ -98,12 +98,12 @@ class Game {
     // 如果 Worker 初始化失败，会自动回退到同步生成
     this.chunkManager.initWorker();
 
-    // 生成初始地形（使用 Perlin 噪声）
-    // 参数：centerX, centerZ, radius, scale, heightMultiplier, baseHeight
-    this.chunkManager.generateTerrain(0, 0, 4, 0.05, 12, 15);
+    // 生成初始地形（使用高级地形生成器）
+    // 使用默认配置：山峰、山谷、湖泊、树木
+    this.chunkManager.generateTerrain(0, 0, 4);
 
     // 将玩家设置到安全的初始位置（高于地形）
-    this.player.setPosition(0, 30, 0);
+    this.player.setPosition(0, 35, 0);
 
     // 创建 World 并集成 ChunkManager
     this.world = new World(this.scene, this.chunkManager);
@@ -119,15 +119,16 @@ class Game {
 
     this.setupEventListeners();
 
-    console.log('✅ 游戏初始化完成（Chunk系统已启用）');
+    console.log('✅ 游戏初始化完成（高级地形系统已启用）');
+    console.log('🌍 地形特性：山峰、山谷、湖泊、树木、基岩底板');
     console.log('🎮 操作提示：');
-    console.log('  - WASD: 移动');
-    console.log('  - Space: 跳跃 / 飞行上升');
-    console.log('  - Shift: 加速 / 飞行下降');
+    console.log('  - WASD: 移动 / 游泳');
+    console.log('  - Space: 跳跃 / 飞行上升 / 游泳上升');
+    console.log('  - Shift: 加速 / 飞行下降 / 游泳下降');
     console.log('  - F: 切换飞行模式');
-    console.log('  - 左键: 破坏方块');
+    console.log('  - 左键: 破坏方块（基岩不可破坏）');
     console.log('  - 右键: 放置方块');
-    console.log('  - 1-9: 切换方块类型（方块选择栏）');
+    console.log('  - 1-9: 切换方块类型（包含基岩和水）');
     console.log('  - F5: 保存游戏');
     console.log('  - F9: 加载游戏');
     console.log(`📦 已加载 ${this.chunkManager.getLoadedChunkCount()} 个 Chunk`);

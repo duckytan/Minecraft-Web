@@ -196,6 +196,13 @@ export class Chunk {
       [0, 1]
     ];
 
+    const shouldRenderFace = (neighbor: BlockType): boolean => {
+      if (blockType === BlockType.WATER) {
+        return neighbor !== BlockType.WATER;
+      }
+      return neighbor === BlockType.AIR || neighbor === BlockType.WATER;
+    };
+
     // 定义六个面的法向量和顶点偏移
     const faces = [
       // 前面 (+Z)
@@ -207,7 +214,7 @@ export class Chunk {
           [halfSize, halfSize, halfSize],
           [-halfSize, halfSize, halfSize]
         ],
-        check: () => this.getBlock(x, y, z + 1) === BlockType.AIR,
+        check: () => shouldRenderFace(this.getBlock(x, y, z + 1)),
         faceType: 'side' as const
       },
       // 后面 (-Z)
@@ -219,7 +226,7 @@ export class Chunk {
           [-halfSize, halfSize, -halfSize],
           [halfSize, halfSize, -halfSize]
         ],
-        check: () => this.getBlock(x, y, z - 1) === BlockType.AIR,
+        check: () => shouldRenderFace(this.getBlock(x, y, z - 1)),
         faceType: 'side' as const
       },
       // 右面 (+X)
@@ -231,7 +238,7 @@ export class Chunk {
           [halfSize, halfSize, -halfSize],
           [halfSize, halfSize, halfSize]
         ],
-        check: () => this.getBlock(x + 1, y, z) === BlockType.AIR,
+        check: () => shouldRenderFace(this.getBlock(x + 1, y, z)),
         faceType: 'side' as const
       },
       // 左面 (-X)
@@ -243,7 +250,7 @@ export class Chunk {
           [-halfSize, halfSize, halfSize],
           [-halfSize, halfSize, -halfSize]
         ],
-        check: () => this.getBlock(x - 1, y, z) === BlockType.AIR,
+        check: () => shouldRenderFace(this.getBlock(x - 1, y, z)),
         faceType: 'side' as const
       },
       // 上面 (+Y)
@@ -255,7 +262,7 @@ export class Chunk {
           [halfSize, halfSize, -halfSize],
           [-halfSize, halfSize, -halfSize]
         ],
-        check: () => this.getBlock(x, y + 1, z) === BlockType.AIR,
+        check: () => shouldRenderFace(this.getBlock(x, y + 1, z)),
         faceType: 'top' as const
       },
       // 下面 (-Y)
@@ -267,7 +274,7 @@ export class Chunk {
           [halfSize, -halfSize, halfSize],
           [-halfSize, -halfSize, halfSize]
         ],
-        check: () => this.getBlock(x, y - 1, z) === BlockType.AIR,
+        check: () => shouldRenderFace(this.getBlock(x, y - 1, z)),
         faceType: 'bottom' as const
       }
     ];
@@ -282,7 +289,11 @@ export class Chunk {
 
       if (materialIndex === undefined) {
         const texture = BlockTextureGenerator.getTexture(blockType, face.faceType);
-        const material = new THREE.MeshLambertMaterial({ map: texture });
+        const material = new THREE.MeshLambertMaterial({
+          map: texture,
+          transparent: blockType === BlockType.WATER,
+          opacity: blockType === BlockType.WATER ? 0.6 : 1.0
+        });
         materialIndex = materials.length;
         materials.push(material);
         materialMap.set(materialKey, materialIndex);

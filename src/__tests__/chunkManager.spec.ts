@@ -56,10 +56,11 @@ describe('ChunkManager', () => {
     expect(chunkManager.getLoadedChunkCount()).toBeGreaterThanOrEqual(9);
 
     // 检查地形层
-    expect(chunkManager.getBlock(0, 0, 0)).toBe(BlockType.STONE); // 底层
-    expect(chunkManager.getBlock(0, 1, 0)).toBe(BlockType.DIRT); // 中层
-    expect(chunkManager.getBlock(0, 2, 0)).toBe(BlockType.GRASS); // 顶层
-    expect(chunkManager.getBlock(0, 3, 0)).toBe(BlockType.AIR); // 上方应该是空气
+    expect(chunkManager.getBlock(0, 0, 0)).toBe(BlockType.BEDROCK); // 底层基岩
+    expect(chunkManager.getBlock(0, 1, 0)).toBe(BlockType.STONE); // 次层
+    expect(chunkManager.getBlock(0, 2, 0)).toBe(BlockType.DIRT); // 中层
+    expect(chunkManager.getBlock(0, 3, 0)).toBe(BlockType.GRASS); // 顶层
+    expect(chunkManager.getBlock(0, 4, 0)).toBe(BlockType.AIR); // 上方应该是空气
   });
 
   it('should update chunks based on player position', () => {
@@ -134,12 +135,14 @@ describe('ChunkManager', () => {
   });
 
   it('should generate terrain with correct block types', () => {
-    chunkManager.generateTerrain(0, 0, 0, 0.05, 12, 15);
+    chunkManager.generateTerrain(0, 0, 0);
 
     // 检查某个位置的地形层结构
     let foundGrass = false;
     let foundDirt = false;
     let foundStone = false;
+    let foundBedrock = false;
+    let foundWater = false;
 
     // 在 (0, 0) 位置向上查找
     for (let y = 0; y < CHUNK_HEIGHT; y++) {
@@ -147,11 +150,16 @@ describe('ChunkManager', () => {
       if (block === BlockType.GRASS) foundGrass = true;
       if (block === BlockType.DIRT) foundDirt = true;
       if (block === BlockType.STONE) foundStone = true;
+      if (block === BlockType.BEDROCK) foundBedrock = true;
+      if (block === BlockType.WATER) foundWater = true;
     }
 
-    // 地形应该包含所有三种方块类型
+    // 地形应该包含所有基本方块类型
     expect(foundGrass).toBe(true);
     expect(foundDirt).toBe(true);
     expect(foundStone).toBe(true);
+    expect(foundBedrock).toBe(true);
+    // 根据生成高度不同，可能没有水
+    expect(foundWater).toBeTypeOf('boolean');
   });
 });

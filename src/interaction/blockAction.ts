@@ -93,6 +93,13 @@ export class BlockActionController {
 
     const blockPos = this.getTargetBlockPosition(hit, 'remove');
 
+    // 检查是否是基岩
+    const blockType = this.world.getBlock(blockPos.x, blockPos.y, blockPos.z);
+    if (blockType === BlockType.BEDROCK) {
+      console.log('⛔ 基岩无法被破坏！');
+      return;
+    }
+
     this.world.removeBlock(blockPos.x, blockPos.y, blockPos.z);
   }
 
