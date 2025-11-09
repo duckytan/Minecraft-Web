@@ -3,9 +3,9 @@
 ## 📊 项目状态概览
 
 **当前阶段**: Phase 3 - 功能增强（进行中）  
-**完成进度**: Phase 1 ✅ (10/10) · Phase 2 ✅ (4/4) · Phase 3 ✅ (2/4)  
-**最后更新**: 2024年11月8日  
-**当前分支**: deployability-check-and-report
+**完成进度**: Phase 1 ✅ (10/10) · Phase 2 ✅ (4/4) · Phase 3 ✅ (3/4)  
+**最后更新**: 2024年11月9日  
+**当前分支**: continue-unfinished-task-report-progress
 
 ---
 
@@ -161,11 +161,10 @@
 - `src/__tests__/terrain.spec.ts` - 地形生成测试
 - `src/__tests__/world.spec.ts` - 世界管理测试
 
-**测试报告**（Phase 1 + Phase 2 + Phase 3-FEAT-01）:
-- 测试文件: 7 个
-- 测试用例: 58 个（+15 个方块栏测试）
-- 全部通过: ✅
-- 新增测试覆盖: 方块选择栏 UI 交互（15 个用例）
+**测试报告**（Phase 1 ~ Phase 3）:
+- 测试文件: 10 个（新增存档系统测试 2 个 + Canvas Mock 1 个）
+- 测试用例: 99 个（全部通过 ✅）
+- 新增测试覆盖: 存档系统（LocalStorage + IndexedDB）、Canvas Mock 兼容性
 
 ---
 
@@ -249,6 +248,33 @@
 - 明确的编号、方块名称、颜色预览
 - 选中槽位高亮、放大与光晕提示
 
+### FEAT-02: 本地存档（LocalStorage）✅
+- ✅ 创建 `src/save/saveManager.ts` 存档管理器
+- ✅ 创建 `src/ui/saveControls.ts` 存档控制 UI
+- ✅ 实现保存/加载/删除存档功能
+- ✅ 支持 F5/F9 快捷键操作
+- ✅ 版本控制与数据验证
+- ✅ 编写 20 个单元测试（全部通过）
+
+**功能特性**:
+- 💾 保存游戏状态（玩家位置、世界数据）
+- 📂 加载存档功能
+- 🗑️ 删除存档（带确认）
+- 🎨 UI 状态消息提示
+
+### FEAT-03: IndexedDB 存档（大型世界）✅
+- ✅ 创建 `src/save/indexedDBStorage.ts` IndexedDB 存储引擎
+- ✅ 实现批量异步 Chunk 保存/加载
+- ✅ 内存回退机制（IndexedDB 不可用时）
+- ✅ 数据完整性保护（深拷贝）
+- ✅ 编写 16 个单元测试（全部通过）
+
+**技术亮点**:
+- 💽 支持 > 10MB 大型世界存储
+- 🔄 异步批量操作（Promise.all）
+- 🧠 降级策略（自动回退到内存存储）
+- ✅ 完整的错误处理与事务管理
+
 ---
 
 ## 📂 项目结构
@@ -331,8 +357,8 @@ web-minecraft/
 
 ### Phase 3: 功能增强（进行中 🚧）
 - ✅ FEAT-01: 方块选择栏 UI（已完成）
-- 🚧 FEAT-02: 本地存档（LocalStorage）
-- 🚧 FEAT-03: IndexedDB 存档（大型世界）
+- ✅ FEAT-02: 本地存档（LocalStorage）
+- ✅ FEAT-03: IndexedDB 存档（大型世界）
 - 🚧 FEAT-04: 音效系统（可选）
 
 ### Phase 4: 自动化与交付（计划中）
