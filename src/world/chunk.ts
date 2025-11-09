@@ -1,5 +1,6 @@
 import * as THREE from 'three';
-import { BlockType, BLOCK_COLORS, BLOCK_SIZE } from './block';
+import { BlockType, BLOCK_SIZE } from './block';
+import { BlockTextureGenerator } from './textures';
 
 /**
  * Chunk 尺寸常量
@@ -84,7 +85,7 @@ export class Chunk {
   }
 
   /**
-   * 生成 Chunk 的网格
+   * 生成 Chunk 的网格（使用程序化纹理）
    */
   public generateMesh(): void {
     // 如果已有网格，先移除
@@ -101,8 +102,11 @@ export class Chunk {
     const geometry = new THREE.BufferGeometry();
     const positions: number[] = [];
     const normals: number[] = [];
-    const colors: number[] = [];
+    const uvs: number[] = [];
     const indices: number[] = [];
+    const groups: Array<{ start: number; count: number; materialIndex: number }> = [];
+    const materials: THREE.MeshLambertMaterial[] = [];
+    const materialMap = new Map<string, number>();
 
     // 世界坐标偏移
     const worldOffsetX = this.chunkX * CHUNK_SIZE;
@@ -118,9 +122,6 @@ export class Chunk {
           const worldX = worldOffsetX + x;
           const worldZ = worldOffsetZ + z;
 
-          // 获取方块颜色
-          const color = new THREE.Color(BLOCK_COLORS[blockType]);
-
           // 检查六个面是否需要渲染（简单面剔除）
           this.addBlockFaces(
             x,
@@ -128,11 +129,14 @@ export class Chunk {
             z,
             worldX,
             worldZ,
-            color,
+            blockType,
             positions,
             normals,
-            colors,
-            indices
+            uvs,
+            indices,
+            groups,
+            materials,
+            materialMap
           );
         }
       }
@@ -146,23 +150,23 @@ export class Chunk {
     // 设置几何体属性
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
     geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
-    geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+    geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
     geometry.setIndex(indices);
     geometry.computeBoundingBox();
 
-    // 创建材质和网格
-    const material = new THREE.MeshLambertMaterial({
-      vertexColors: true
-    });
+    // 添加材质分组
+    for (const group of groups) {
+      geometry.addGroup(group.start, group.count, group.materialIndex);
+    }
 
-    this.mesh = new THREE.Mesh(geometry, material);
+    this.mesh = new THREE.Mesh(geometry, materials);
     this.mesh.castShadow = true;
     this.mesh.receiveShadow = true;
     this.scene.add(this.mesh);
   }
 
   /**
-   * 为方块添加可见面
+   * 为方块添加可见面（带纹理）
    */
   private addBlockFaces(
     x: number,
@@ -170,16 +174,27 @@ export class Chunk {
     z: number,
     worldX: number,
     worldZ: number,
-    color: THREE.Color,
+    blockType: BlockType,
     positions: number[],
     normals: number[],
-    colors: number[],
-    indices: number[]
+    uvs: number[],
+    indices: number[],
+    groups: Array<{ start: number; count: number; materialIndex: number }>,
+    materials: THREE.MeshLambertMaterial[],
+    materialMap: Map<string, number>
   ): void {
     const halfSize = BLOCK_SIZE / 2;
     const wx = worldX * BLOCK_SIZE;
     const wy = y * BLOCK_SIZE;
     const wz = worldZ * BLOCK_SIZE;
+
+    // UV坐标（标准方形）
+    const faceUVs = [
+      [0, 0],
+      [1, 0],
+      [1, 1],
+      [0, 1]
+    ];
 
     // 定义六个面的法向量和顶点偏移
     const faces = [
@@ -192,7 +207,8 @@ export class Chunk {
           [halfSize, halfSize, halfSize],
           [-halfSize, halfSize, halfSize]
         ],
-        check: () => this.getBlock(x, y, z + 1) === BlockType.AIR
+        check: () => this.getBlock(x, y, z + 1) === BlockType.AIR,
+        faceType: 'side' as const
       },
       // 后面 (-Z)
       {
@@ -203,7 +219,8 @@ export class Chunk {
           [-halfSize, halfSize, -halfSize],
           [halfSize, halfSize, -halfSize]
         ],
-        check: () => this.getBlock(x, y, z - 1) === BlockType.AIR
+        check: () => this.getBlock(x, y, z - 1) === BlockType.AIR,
+        faceType: 'side' as const
       },
       // 右面 (+X)
       {
@@ -214,7 +231,8 @@ export class Chunk {
           [halfSize, halfSize, -halfSize],
           [halfSize, halfSize, halfSize]
         ],
-        check: () => this.getBlock(x + 1, y, z) === BlockType.AIR
+        check: () => this.getBlock(x + 1, y, z) === BlockType.AIR,
+        faceType: 'side' as const
       },
       // 左面 (-X)
       {
@@ -225,7 +243,8 @@ export class Chunk {
           [-halfSize, halfSize, halfSize],
           [-halfSize, halfSize, -halfSize]
         ],
-        check: () => this.getBlock(x - 1, y, z) === BlockType.AIR
+        check: () => this.getBlock(x - 1, y, z) === BlockType.AIR,
+        faceType: 'side' as const
       },
       // 上面 (+Y)
       {
@@ -236,7 +255,8 @@ export class Chunk {
           [halfSize, halfSize, -halfSize],
           [-halfSize, halfSize, -halfSize]
         ],
-        check: () => this.getBlock(x, y + 1, z) === BlockType.AIR
+        check: () => this.getBlock(x, y + 1, z) === BlockType.AIR,
+        faceType: 'top' as const
       },
       // 下面 (-Y)
       {
@@ -247,7 +267,8 @@ export class Chunk {
           [halfSize, -halfSize, halfSize],
           [-halfSize, -halfSize, halfSize]
         ],
-        check: () => this.getBlock(x, y - 1, z) === BlockType.AIR
+        check: () => this.getBlock(x, y - 1, z) === BlockType.AIR,
+        faceType: 'bottom' as const
       }
     ];
 
@@ -255,18 +276,39 @@ export class Chunk {
     for (const face of faces) {
       if (!face.check()) continue;
 
+      // 获取或创建材质
+      const materialKey = `${blockType}_${face.faceType}`;
+      let materialIndex = materialMap.get(materialKey);
+
+      if (materialIndex === undefined) {
+        const texture = BlockTextureGenerator.getTexture(blockType, face.faceType);
+        const material = new THREE.MeshLambertMaterial({ map: texture });
+        materialIndex = materials.length;
+        materials.push(material);
+        materialMap.set(materialKey, materialIndex);
+      }
+
+      const groupStart = indices.length;
       const baseIndex = positions.length / 3;
 
       // 添加四个顶点
-      for (const vertex of face.vertices) {
+      for (let i = 0; i < face.vertices.length; i++) {
+        const vertex = face.vertices[i];
         positions.push(wx + vertex[0], wy + vertex[1], wz + vertex[2]);
         normals.push(face.normal[0], face.normal[1], face.normal[2]);
-        colors.push(color.r, color.g, color.b);
+        uvs.push(faceUVs[i][0], faceUVs[i][1]);
       }
 
       // 添加两个三角形的索引（逆时针顺序）
       indices.push(baseIndex, baseIndex + 1, baseIndex + 2);
       indices.push(baseIndex, baseIndex + 2, baseIndex + 3);
+
+      // 添加材质组（6个索引 = 2个三角形）
+      groups.push({
+        start: groupStart,
+        count: 6,
+        materialIndex
+      });
     }
   }
 
