@@ -10,7 +10,7 @@ export class MouseLookController {
 
   private readonly camera: THREE.PerspectiveCamera;
 
-  private readonly sensitivity: number;
+  private sensitivity: number;
 
   private isLocked = false;
 
@@ -23,11 +23,15 @@ export class MouseLookController {
   constructor(domElement: HTMLElement, camera: THREE.PerspectiveCamera, options?: MouseLookOptions) {
     this.domElement = domElement;
     this.camera = camera;
-    this.sensitivity = options?.sensitivity ?? 0.0025;
+    this.sensitivity = options?.sensitivity ?? 0.002;
     this.onLockChange = options?.onLockChange;
 
     this.camera.rotation.order = 'YXZ';
     this.bindEvents();
+  }
+
+  setSensitivity(sensitivity: number): void {
+    this.sensitivity = sensitivity;
   }
 
   private bindEvents(): void {

@@ -8,6 +8,8 @@ export interface BlockActionOptions {
   maxDistance?: number;
   currentBlockType?: BlockType;
   getSelectedBlockType?: () => BlockType;
+  onBlockPlaced?: (blockType: BlockType, position: THREE.Vector3) => void;
+  onBlockBroken?: (blockType: BlockType, position: THREE.Vector3) => void;
 }
 
 export class BlockActionController {
@@ -25,6 +27,10 @@ export class BlockActionController {
 
   private readonly getSelectedBlockType?: () => BlockType;
 
+  private readonly onBlockPlaced?: (blockType: BlockType, position: THREE.Vector3) => void;
+
+  private readonly onBlockBroken?: (blockType: BlockType, position: THREE.Vector3) => void;
+
   constructor(
     world: World,
     camera: THREE.PerspectiveCamera,
@@ -35,6 +41,8 @@ export class BlockActionController {
     this.camera = camera;
     this.raycast = new RaycastController(options?.maxDistance || 5);
     this.getSelectedBlockType = options?.getSelectedBlockType;
+    this.onBlockPlaced = options?.onBlockPlaced;
+    this.onBlockBroken = options?.onBlockBroken;
     this.currentBlockType =
       options?.currentBlockType ?? (this.getSelectedBlockType ? this.getSelectedBlockType() : BlockType.DIRT);
     this.playerBoundingBox = playerBoundingBox;
@@ -101,6 +109,7 @@ export class BlockActionController {
     }
 
     this.world.removeBlock(blockPos.x, blockPos.y, blockPos.z);
+    this.onBlockBroken?.(blockType, blockPos.clone());
   }
 
   private handlePlaceBlock(): void {
@@ -118,6 +127,7 @@ export class BlockActionController {
 
     const blockType = this.getSelectedBlockType ? this.getSelectedBlockType() : this.currentBlockType;
     this.world.setBlock(newBlockPos.x, newBlockPos.y, newBlockPos.z, blockType);
+    this.onBlockPlaced?.(blockType, newBlockPos.clone());
   }
 
   private wouldCollideWithPlayer(blockPos: THREE.Vector3): boolean {

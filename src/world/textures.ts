@@ -46,7 +46,7 @@ export class BlockTextureGenerator {
         this.generateLeavesTexture(ctx);
         break;
       case BlockType.BEDROCK:
-        this.generateBedrockTexture(ctx, face);
+        this.generateBedrockTexture(ctx);
         break;
       case BlockType.WATER:
         this.generateWaterTexture(ctx);
@@ -281,7 +281,7 @@ export class BlockTextureGenerator {
    * 基岩纹理
    * - 深黑色基础 + 细微裂纹
    */
-  private static generateBedrockTexture(ctx: CanvasRenderingContext2D, face: string): void {
+  private static generateBedrockTexture(ctx: CanvasRenderingContext2D): void {
     ctx.fillStyle = '#1a1a1a';
     ctx.fillRect(0, 0, TEXTURE_SIZE, TEXTURE_SIZE);
 
