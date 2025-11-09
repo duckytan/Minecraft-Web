@@ -135,7 +135,7 @@ export class AdvancedTerrainGenerator {
           // 使用噪声决定是否生成树木
           const treeNoise = this.treeNoise(worldX * 0.1, worldZ * 0.1);
           if (treeNoise > 1 - this.config.treeChance) {
-            this.generateTree(blocks, x, height, z, heightMap);
+            this.generateTree(blocks, x, height, z);
           }
         }
       }
@@ -151,8 +151,7 @@ export class AdvancedTerrainGenerator {
     blocks: Uint8Array,
     x: number,
     groundY: number,
-    z: number,
-    heightMap: number[][]
+    z: number
   ): void {
     const treeHeight = 4 + Math.floor(Math.random() * 2); // 4-5格高
     const trunkTop = groundY + treeHeight;
