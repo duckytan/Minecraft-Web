@@ -1,4 +1,5 @@
 import { SoundManager } from '../audio/soundManager';
+import { isMobileDevice } from '../utils/device';
 
 export interface GameSettings {
   masterVolume: number;
@@ -46,16 +47,34 @@ export class SettingsManager {
     this.onSettingsChange = callback;
   }
 
+  /**
+   * 获取默认设置
+   * 移动设备会自动启用虚拟控制器
+   */
+  private getDefaultSettings(): GameSettings {
+    const settings = { ...DEFAULT_SETTINGS };
+    
+    // 检测移动设备，自动启用虚拟按键
+    if (isMobileDevice()) {
+      settings.virtualControls = true;
+      console.log('📱 检测到移动设备，自动启用虚拟按键');
+    }
+    
+    return settings;
+  }
+
   private loadSettings(): GameSettings {
+    const defaultSettings = this.getDefaultSettings();
+
     try {
       const saved = localStorage.getItem('gameSettings');
       if (saved) {
-        return { ...DEFAULT_SETTINGS, ...JSON.parse(saved) };
+        return { ...defaultSettings, ...JSON.parse(saved) };
       }
     } catch (error) {
       console.error('加载设置失败:', error);
     }
-    return { ...DEFAULT_SETTINGS };
+    return defaultSettings;
   }
 
   private saveSettings(): void {
@@ -112,7 +131,7 @@ export class SettingsManager {
   }
 
   reset(): void {
-    this.settings = { ...DEFAULT_SETTINGS };
+    this.settings = this.getDefaultSettings();
     this.saveSettings();
     this.applySoundSettings();
     if (this.onSettingsChange) {
