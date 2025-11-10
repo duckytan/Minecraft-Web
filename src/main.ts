@@ -7,6 +7,7 @@ import { ChunkManager } from './world/chunkManager';
 import { World } from './world/world';
 import { KeyboardInput } from './input/keyboard';
 import { MouseLookController } from './input/mouse';
+import { VirtualControls } from './input/virtualControls';
 import { Player } from './player';
 import { BlockActionController } from './interaction/blockAction';
 import { initHUD } from './ui/hud';
@@ -15,6 +16,7 @@ import { SaveManager } from './save/saveManager';
 import { initSaveControls } from './ui/saveControls';
 import { SoundManager, SoundType } from './audio/soundManager';
 import { SettingsManager, initSettings } from './ui/settings';
+import { GravitySystem } from './physics/gravity';
 
 class Game {
   private readonly scene: THREE.Scene;
@@ -46,6 +48,12 @@ class Game {
   private readonly settingsUI: ReturnType<typeof initSettings>;
 
   private readonly mouseLook: MouseLookController;
+
+  private readonly virtualControls: VirtualControls;
+
+  private readonly gravitySystem: GravitySystem;
+
+  private blockActionController: BlockActionController | null = null;
 
   private lastChunkUpdate = 0;
 
@@ -84,11 +92,13 @@ class Game {
     this.hud.overlay.addEventListener('click', async (event) => {
       event.preventDefault();
       this.renderer.domElement.focus();
-      if (document.pointerLockElement !== this.renderer.domElement) {
+
+      if (!this.virtualControls.isEnabled() && document.pointerLockElement !== this.renderer.domElement) {
         this.renderer.domElement.requestPointerLock();
-        // 恢复音频上下文（某些浏览器需要用户交互）
-        await this.soundManager.resume();
       }
+
+      // 恢复音频上下文（某些浏览器需要用户交互）
+      await this.soundManager.resume();
     });
 
     this.keyboard = new KeyboardInput();
@@ -138,7 +148,13 @@ class Game {
     // 创建 World 并集成 ChunkManager
     this.world = new World(this.scene, this.chunkManager);
 
-    new BlockActionController(
+    // 初始化重力系统
+    this.gravitySystem = new GravitySystem(this.chunkManager, this.scene);
+    if (settings.realGravity) {
+      this.gravitySystem.enable();
+    }
+
+    this.blockActionController = new BlockActionController(
       this.world,
       this.camera,
       () => this.player.getBoundingBox(),
@@ -151,14 +167,39 @@ class Game {
             playbackRate: 0.9 + Math.random() * 0.2
           });
         },
-        onBlockBroken: () => {
+        onBlockBroken: (_blockType, position) => {
           this.soundManager.play(SoundType.BREAK_BLOCK, {
             volume: 0.65,
             playbackRate: 0.9 + Math.random() * 0.15
           });
+          // 检查重力系统
+          if (this.gravitySystem.isEnabled()) {
+            this.gravitySystem.checkStructuralIntegrity(
+              Math.floor(position.x),
+              Math.floor(position.y),
+              Math.floor(position.z)
+            );
+          }
         }
       }
     );
+
+    // 初始化虚拟控制器
+    this.virtualControls = new VirtualControls(this.keyboard, this.renderer.domElement);
+    this.virtualControls.setMouseMoveCallback((deltaX, deltaY) => {
+      this.mouseLook.updateRotation(deltaX, deltaY);
+    });
+    this.virtualControls.setLeftClickCallback(() => {
+      this.blockActionController?.breakBlockViaVirtualControl();
+    });
+    this.virtualControls.setRightClickCallback(() => {
+      this.blockActionController?.placeBlockViaVirtualControl();
+    });
+    this.virtualControls.setLookSensitivity(settings.mouseSensitivity);
+    
+    if (settings.virtualControls) {
+      this.virtualControls.enable();
+    }
 
     // 初始化存档系统
     this.saveManager = new SaveManager(this.chunkManager, this.player);
@@ -171,6 +212,7 @@ class Game {
     this.settingsManager.onSettingsChanged((newSettings) => {
       // 更新鼠标灵敏度
       this.mouseLook.setSensitivity(newSettings.mouseSensitivity);
+      this.virtualControls.setLookSensitivity(newSettings.mouseSensitivity);
 
       // 更新 FOV
       this.camera.fov = newSettings.fov;
@@ -178,6 +220,25 @@ class Game {
 
       // 更新 FPS 显示
       this.hud.stats.dom.style.display = newSettings.showFPS ? 'block' : 'none';
+
+      // 更新虚拟控制器
+      if (newSettings.virtualControls && !this.virtualControls.isEnabled()) {
+        this.virtualControls.enable();
+        if (document.pointerLockElement === this.renderer.domElement) {
+          document.exitPointerLock();
+        }
+        console.log('📱 虚拟按键已启用');
+      } else if (!newSettings.virtualControls && this.virtualControls.isEnabled()) {
+        this.virtualControls.disable();
+        console.log('📱 虚拟按键已禁用');
+      }
+
+      // 更新重力系统
+      if (newSettings.realGravity && !this.gravitySystem.isEnabled()) {
+        this.gravitySystem.enable();
+      } else if (!newSettings.realGravity && this.gravitySystem.isEnabled()) {
+        this.gravitySystem.disable();
+      }
 
       // 注意：渲染距离变化需要重新生成地形，此处仅更新 ChunkManager
       // 实际应用中可能需要清空并重新加载 Chunk
@@ -204,6 +265,14 @@ class Game {
     // 检查是否有存档
     if (this.saveManager.hasSave()) {
       console.log('💾 检测到存档，按 F9 加载');
+    }
+
+    // 虚拟控制器和重力系统提示
+    if (settings.virtualControls) {
+      console.log('📱 虚拟按键已启用（移动端控制）');
+    }
+    if (settings.realGravity) {
+      console.log('🌍 真实重力模式已启用');
     }
   }
 
@@ -241,6 +310,9 @@ class Game {
 
     // 更新玩家（不再传递 colliders，使用 ChunkManager 的方块检测）
     this.player.update(deltaTime);
+
+    // 更新重力系统
+    this.gravitySystem.update(deltaTime);
 
     this.renderer.render(this.scene, this.camera);
 

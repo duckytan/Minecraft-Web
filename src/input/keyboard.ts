@@ -8,17 +8,21 @@ export class KeyboardInput {
 
   private setupEventListeners(): void {
     window.addEventListener('keydown', (e: KeyboardEvent) => {
-      // F键切换飞行模式（只在按下时触发一次）
-      if (e.code === 'KeyF' && !this.keys.get(e.code)) {
-        this.onFlightToggleCallbacks.forEach((callback) => callback());
-      }
-
-      this.keys.set(e.code, true);
+      this.handleKeyStateChange(e.code, true);
     });
 
     window.addEventListener('keyup', (e: KeyboardEvent) => {
-      this.keys.set(e.code, false);
+      this.handleKeyStateChange(e.code, false);
     });
+  }
+
+  private handleKeyStateChange(code: string, pressed: boolean): void {
+    // F 键切换飞行模式（只在按下时触发一次）
+    if (code === 'KeyF' && pressed && !this.keys.get(code)) {
+      this.onFlightToggleCallbacks.forEach((callback) => callback());
+    }
+
+    this.keys.set(code, pressed);
   }
 
   /**
@@ -62,5 +66,9 @@ export class KeyboardInput {
 
   reset(): void {
     this.keys.clear();
+  }
+
+  setKeyState(keyCode: string, pressed: boolean): void {
+    this.handleKeyStateChange(keyCode, pressed);
   }
 }
