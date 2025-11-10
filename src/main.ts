@@ -93,7 +93,9 @@ class Game {
       event.preventDefault();
       this.renderer.domElement.focus();
 
-      if (!this.virtualControls.isEnabled() && document.pointerLockElement !== this.renderer.domElement) {
+      if (this.virtualControls.isEnabled()) {
+        this.hud.setPointerLockState(true);
+      } else if (document.pointerLockElement !== this.renderer.domElement) {
         this.renderer.domElement.requestPointerLock();
       }
 
