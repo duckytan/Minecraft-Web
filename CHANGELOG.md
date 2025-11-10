@@ -33,6 +33,12 @@
 - README.md 重构为导航型文档，整合所有文档链接
 - 旧文档迁移至附录存档文档（A1/A2）
 
+### 修复
+- 🔧 修复 Vercel 部署 MIME 类型错误（JS 模块返回 text/html 导致空白页）
+  - 将 `vite.config.ts` 中 `base` 从 `/Minecraft-Web/` 改为 `./`（相对路径）
+  - 优化 `vercel.json` 路由规则，优先处理文件系统再回退到 SPA
+- 🧪 为 Vitest 添加 Canvas 2D Mock（`src/__tests__/setup.ts`），恢复世界模块测试通过
+
 ### 完成任务（Phase 1 - MVP 基础功能）
 - ✅ INFRA-01: 项目初始化与构建配置
 - ✅ CORE-01: Three.js 场景搭建
