@@ -62,14 +62,21 @@ export class MouseLookController {
       return;
     }
 
-    this.yaw -= event.movementX * this.sensitivity;
-    this.pitch -= event.movementY * this.sensitivity;
+    this.updateRotation(event.movementX * this.sensitivity, event.movementY * this.sensitivity);
+  };
+
+  /**
+   * 更新相机旋转（可从外部调用，用于虚拟控制器）
+   */
+  updateRotation(deltaX: number, deltaY: number): void {
+    this.yaw -= deltaX;
+    this.pitch -= deltaY;
 
     const maxPitch = Math.PI / 2 - 0.05;
     this.pitch = Math.max(-maxPitch, Math.min(maxPitch, this.pitch));
 
     this.camera.rotation.set(this.pitch, this.yaw, 0);
-  };
+  }
 
   dispose(): void {
     this.domElement.removeEventListener('click', this.handleDocumentClick);

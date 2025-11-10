@@ -447,3 +447,180 @@ canvas {
     width: 100%;
   }
 }
+
+/* 虚拟控制器 */
+.virtual-controls {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 250;
+}
+
+.virtual-joystick {
+  position: absolute;
+  bottom: 80px;
+  left: 80px;
+  width: 140px;
+  height: 140px;
+  pointer-events: auto;
+}
+
+.virtual-joystick .joystick-base {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 140px;
+  height: 140px;
+  border-radius: 70px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  transform: translate(-50%, -50%);
+  backdrop-filter: blur(4px);
+}
+
+.virtual-joystick .joystick-knob {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 80px;
+  height: 80px;
+  border-radius: 40px;
+  background: rgba(255, 255, 255, 0.2);
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  transform: translate(-50%, -50%);
+  transition: transform 0.1s ease;
+}
+
+.virtual-buttons {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.virtual-buttons .button-group-bottom-right,
+.virtual-buttons .button-group-top-right,
+.virtual-buttons .button-group-top-left {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  pointer-events: auto;
+}
+
+.virtual-buttons .button-group-bottom-right {
+  bottom: 80px;
+  right: 80px;
+}
+
+.virtual-buttons .button-group-top-right {
+  top: 80px;
+  right: 80px;
+}
+
+.virtual-buttons .button-group-top-left {
+  top: 80px;
+  left: 80px;
+}
+
+.virtual-button {
+  width: 70px;
+  height: 70px;
+  border-radius: 20px;
+  border: none;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  font-size: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(6px);
+  transition: transform 0.15s ease, background 0.15s ease;
+  pointer-events: auto;
+}
+
+.virtual-button:active,
+.virtual-button.active {
+  transform: scale(0.94);
+  background: rgba(255, 215, 0, 0.35);
+}
+
+.virtual-button.break-button {
+  background: rgba(244, 67, 54, 0.45);
+}
+
+.virtual-button.place-button {
+  background: rgba(76, 175, 80, 0.45);
+}
+
+.virtual-button.jump-button {
+  background: rgba(33, 150, 243, 0.45);
+}
+
+.virtual-button.sprint-button {
+  background: rgba(156, 39, 176, 0.45);
+}
+
+.virtual-button.flight-button {
+  background: rgba(255, 193, 7, 0.45);
+}
+
+@media (max-width: 768px) {
+  .virtual-joystick {
+    bottom: 60px;
+    left: 40px;
+  }
+
+  .virtual-buttons .button-group-bottom-right {
+    bottom: 60px;
+    right: 40px;
+  }
+
+  .virtual-buttons .button-group-top-right {
+    top: 60px;
+    right: 40px;
+  }
+
+  .virtual-buttons .button-group-top-left {
+    top: 60px;
+    left: 40px;
+  }
+
+  .virtual-button {
+    width: 64px;
+    height: 64px;
+    font-size: 22px;
+  }
+}
+
+@media (max-width: 540px) {
+  .virtual-joystick {
+    bottom: 40px;
+    left: 20px;
+  }
+
+  .virtual-buttons .button-group-bottom-right {
+    bottom: 40px;
+    right: 20px;
+  }
+
+  .virtual-buttons .button-group-top-right {
+    top: 40px;
+    right: 20px;
+  }
+
+  .virtual-buttons .button-group-top-left {
+    top: 40px;
+    left: 20px;
+  }
+
+  .virtual-button {
+    width: 58px;
+    height: 58px;
+    font-size: 20px;
+  }
+}

@@ -72,6 +72,20 @@ export class BlockActionController {
     }
   }
 
+  /**
+   * 虚拟控制器触发破坏方块
+   */
+  breakBlockViaVirtualControl(): void {
+    this.handleBreakBlock();
+  }
+
+  /**
+   * 虚拟控制器触发放置方块
+   */
+  placeBlockViaVirtualControl(): void {
+    this.handlePlaceBlock();
+  }
+
   private readonly handleKeyDownForSelection = (event: KeyboardEvent): void => {
     const key = parseInt(event.key, 10);
     if (Number.isNaN(key)) {

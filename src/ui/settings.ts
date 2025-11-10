@@ -10,6 +10,8 @@ export interface GameSettings {
   fov: number;
   mouseSensitivity: number;
   showFPS: boolean;
+  virtualControls: boolean;
+  realGravity: boolean;
 }
 
 const DEFAULT_SETTINGS: GameSettings = {
@@ -21,7 +23,9 @@ const DEFAULT_SETTINGS: GameSettings = {
   renderDistance: 4,
   fov: 75,
   mouseSensitivity: 0.002,
-  showFPS: true
+  showFPS: true,
+  virtualControls: false,
+  realGravity: false
 };
 
 export class SettingsManager {
@@ -174,6 +178,15 @@ export function initSettings(settingsManager: SettingsManager): {
   content.appendChild(createSlider('鼠标灵敏度', settings.mouseSensitivity * 1000, 0.5, 5, 0.1, (value) => {
     settingsManager.updateSetting('mouseSensitivity', value / 1000);
   }));
+  content.appendChild(createToggle('虚拟按键（移动端）', settings.virtualControls, (value) => {
+    settingsManager.updateSetting('virtualControls', value);
+  }));
+
+  // 游戏玩法设置
+  content.appendChild(createSection('🌍 游戏玩法'));
+  content.appendChild(createToggle('真实重力模式', settings.realGravity, (value) => {
+    settingsManager.updateSetting('realGravity', value);
+  }));
 
   panel.appendChild(content);
 
@@ -221,6 +234,14 @@ export function initSettings(settingsManager: SettingsManager): {
     content.appendChild(createSection('🎮 控制设置'));
     content.appendChild(createSlider('鼠标灵敏度', newSettings.mouseSensitivity * 1000, 0.5, 5, 0.1, (value) => {
       settingsManager.updateSetting('mouseSensitivity', value / 1000);
+    }));
+    content.appendChild(createToggle('虚拟按键（移动端）', newSettings.virtualControls, (value) => {
+      settingsManager.updateSetting('virtualControls', value);
+    }));
+
+    content.appendChild(createSection('🌍 游戏玩法'));
+    content.appendChild(createToggle('真实重力模式', newSettings.realGravity, (value) => {
+      settingsManager.updateSetting('realGravity', value);
     }));
   };
 
