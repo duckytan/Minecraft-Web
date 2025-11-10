@@ -68,8 +68,20 @@ export class SettingsManager {
 
     try {
       const saved = localStorage.getItem('gameSettings');
+      const mobileDisabledFlag = localStorage.getItem('mobileVirtualControlsDisabled') === 'true';
+
       if (saved) {
-        return { ...defaultSettings, ...JSON.parse(saved) };
+        const loadedSettings = { ...defaultSettings, ...JSON.parse(saved) };
+
+        if (isMobileDevice() && !mobileDisabledFlag) {
+          loadedSettings.virtualControls = true;
+        }
+
+        return loadedSettings;
+      }
+
+      if (isMobileDevice() && mobileDisabledFlag) {
+        defaultSettings.virtualControls = false;
       }
     } catch (error) {
       console.error('加载设置失败:', error);
@@ -103,6 +115,19 @@ export class SettingsManager {
     this.settings[key] = value;
     this.saveSettings();
 
+    // 在移动设备上，如果用户手动关闭虚拟控制器，设置标记
+    if (key === 'virtualControls' && isMobileDevice()) {
+      try {
+        if (value === false) {
+          localStorage.setItem('mobileVirtualControlsDisabled', 'true');
+        } else {
+          localStorage.removeItem('mobileVirtualControlsDisabled');
+        }
+      } catch (storageError) {
+        console.error('更新虚拟按键状态失败:', storageError);
+      }
+    }
+
     // 应用音频设置
     if (this.soundManager) {
       switch (key) {
@@ -134,6 +159,14 @@ export class SettingsManager {
     this.settings = this.getDefaultSettings();
     this.saveSettings();
     this.applySoundSettings();
+    
+    // 清除移动设备虚拟控制器禁用标记
+    try {
+      localStorage.removeItem('mobileVirtualControlsDisabled');
+    } catch (storageError) {
+      console.error('清除虚拟按键标记失败:', storageError);
+    }
+    
     if (this.onSettingsChange) {
       this.onSettingsChange(this.settings);
     }
