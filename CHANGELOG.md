@@ -28,6 +28,7 @@
 - 新增核心模块单元测试（碰撞检测、方块系统、地形生成、世界管理）
 - 新增 Perlin 噪声地形生成（simplex-noise，OPT-03） ✨
 - 新增地形生成 Web Worker（异步加载，OPT-04） ✨
+- 📄 新增《DEPLOYMENT_ISSUE_ANALYSIS.md》《DEPLOYMENT_WHITE_SCREEN_ROOT_CAUSE_ANALYSIS.md》《GITHUB_PAGES_FIX_GUIDE.md》，系统性梳理 GitHub Pages 白屏根因与修复策略
 
 ### 变更
 - README.md 重构为导航型文档，整合所有文档链接
