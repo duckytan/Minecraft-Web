@@ -366,6 +366,10 @@ export class ChunkManager {
     this.advancedTerrain.updateConfig(config);
   }
 
+  public refreshTerrainSeed(): void {
+    this.advancedTerrain.refreshSeed();
+  }
+
   /**
    * 获取当前地形配置
    */

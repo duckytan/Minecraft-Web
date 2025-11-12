@@ -13,6 +13,11 @@ export interface GameSettings {
   showFPS: boolean;
   virtualControls: boolean;
   realGravity: boolean;
+  terrainScale: number;
+  terrainHeight: number;
+  waterLevel: number;
+  treeDensity: number;
+  caveThreshold: number;
 }
 
 const DEFAULT_SETTINGS: GameSettings = {
@@ -26,7 +31,12 @@ const DEFAULT_SETTINGS: GameSettings = {
   mouseSensitivity: 0.002,
   showFPS: true,
   virtualControls: false,
-  realGravity: false
+  realGravity: false,
+  terrainScale: 0.03,
+  terrainHeight: 20,
+  waterLevel: 18,
+  treeDensity: 0.02,
+  caveThreshold: 0.6
 };
 
 export class SettingsManager {
@@ -173,7 +183,10 @@ export class SettingsManager {
   }
 }
 
-export function initSettings(settingsManager: SettingsManager): {
+export function initSettings(
+  settingsManager: SettingsManager,
+  onRegenerateWorld?: () => void
+): {
   open: () => void;
   close: () => void;
   toggle: () => void;
@@ -193,53 +206,128 @@ export function initSettings(settingsManager: SettingsManager): {
   const content = document.createElement('div');
   content.className = 'settings-content';
 
-  const settings = settingsManager.getSettings();
+  // 渲染所有设置控件
+  function renderAllSettings(): void {
+    content.innerHTML = '';
+    const settings = settingsManager.getSettings();
 
-  // 音频设置
-  content.appendChild(createSection('🔊 音频设置'));
-  content.appendChild(createSlider('主音量', settings.masterVolume, 0, 1, 0.01, (value) => {
-    settingsManager.updateSetting('masterVolume', value);
-  }));
-  content.appendChild(createSlider('音乐音量', settings.musicVolume, 0, 1, 0.01, (value) => {
-    settingsManager.updateSetting('musicVolume', value);
-  }));
-  content.appendChild(createSlider('音效音量', settings.sfxVolume, 0, 1, 0.01, (value) => {
-    settingsManager.updateSetting('sfxVolume', value);
-  }));
-  content.appendChild(createToggle('背景音乐', settings.musicEnabled, (value) => {
-    settingsManager.updateSetting('musicEnabled', value);
-  }));
-  content.appendChild(createToggle('音效', settings.sfxEnabled, (value) => {
-    settingsManager.updateSetting('sfxEnabled', value);
-  }));
+    // 音频设置
+    content.appendChild(createSection('🔊 音频设置'));
+    content.appendChild(
+      createSlider('主音量', settings.masterVolume, 0, 1, 0.01, (value) => {
+        settingsManager.updateSetting('masterVolume', value);
+      })
+    );
+    content.appendChild(
+      createSlider('音乐音量', settings.musicVolume, 0, 1, 0.01, (value) => {
+        settingsManager.updateSetting('musicVolume', value);
+      })
+    );
+    content.appendChild(
+      createSlider('音效音量', settings.sfxVolume, 0, 1, 0.01, (value) => {
+        settingsManager.updateSetting('sfxVolume', value);
+      })
+    );
+    content.appendChild(
+      createToggle('背景音乐', settings.musicEnabled, (value) => {
+        settingsManager.updateSetting('musicEnabled', value);
+      })
+    );
+    content.appendChild(
+      createToggle('音效', settings.sfxEnabled, (value) => {
+        settingsManager.updateSetting('sfxEnabled', value);
+      })
+    );
 
-  // 图形设置
-  content.appendChild(createSection('🎨 图形设置'));
-  content.appendChild(createSlider('渲染距离', settings.renderDistance, 2, 8, 1, (value) => {
-    settingsManager.updateSetting('renderDistance', value);
-  }, ' Chunk'));
-  content.appendChild(createSlider('视野 (FOV)', settings.fov, 60, 110, 5, (value) => {
-    settingsManager.updateSetting('fov', value);
-  }, '°'));
-  content.appendChild(createToggle('显示 FPS', settings.showFPS, (value) => {
-    settingsManager.updateSetting('showFPS', value);
-  }));
+    // 图形设置
+    content.appendChild(createSection('🎨 图形设置'));
+    content.appendChild(
+      createSlider('渲染距离', settings.renderDistance, 2, 8, 1, (value) => {
+        settingsManager.updateSetting('renderDistance', value);
+      }, ' Chunk')
+    );
+    content.appendChild(
+      createSlider('视野 (FOV)', settings.fov, 60, 110, 5, (value) => {
+        settingsManager.updateSetting('fov', value);
+      }, '°')
+    );
+    content.appendChild(
+      createToggle('显示 FPS', settings.showFPS, (value) => {
+        settingsManager.updateSetting('showFPS', value);
+      })
+    );
 
-  // 控制设置
-  content.appendChild(createSection('🎮 控制设置'));
-  content.appendChild(createSlider('鼠标灵敏度', settings.mouseSensitivity * 1000, 0.5, 5, 0.1, (value) => {
-    settingsManager.updateSetting('mouseSensitivity', value / 1000);
-  }));
-  content.appendChild(createToggle('虚拟按键（移动端）', settings.virtualControls, (value) => {
-    settingsManager.updateSetting('virtualControls', value);
-  }));
+    // 控制设置
+    content.appendChild(createSection('🎮 控制设置'));
+    content.appendChild(
+      createSlider('鼠标灵敏度', settings.mouseSensitivity * 1000, 0.5, 5, 0.1, (value) => {
+        settingsManager.updateSetting('mouseSensitivity', value / 1000);
+      })
+    );
+    content.appendChild(
+      createToggle('虚拟按键（移动端）', settings.virtualControls, (value) => {
+        settingsManager.updateSetting('virtualControls', value);
+      })
+    );
 
-  // 游戏玩法设置
-  content.appendChild(createSection('🌍 游戏玩法'));
-  content.appendChild(createToggle('真实重力模式', settings.realGravity, (value) => {
-    settingsManager.updateSetting('realGravity', value);
-  }));
+    // 游戏玩法设置
+    content.appendChild(createSection('🌍 游戏玩法'));
+    content.appendChild(
+      createToggle('真实重力模式', settings.realGravity, (value) => {
+        settingsManager.updateSetting('realGravity', value);
+      })
+    );
 
+    // 地图生成设置
+    content.appendChild(createSection('🗺️ 地图生成'));
+    content.appendChild(
+      createSlider('地形缩放', settings.terrainScale, 0.01, 0.08, 0.005, (value) => {
+        settingsManager.updateSetting('terrainScale', Number(value.toFixed(3)));
+      })
+    );
+    content.appendChild(
+      createSlider('地形高度系数', settings.terrainHeight, 8, 40, 1, (value) => {
+        settingsManager.updateSetting('terrainHeight', Math.round(value));
+      })
+    );
+    content.appendChild(
+      createSlider('水位线', settings.waterLevel, 5, 32, 1, (value) => {
+        settingsManager.updateSetting('waterLevel', Math.round(value));
+      })
+    );
+    content.appendChild(
+      createSlider('树木密度', settings.treeDensity * 100, 0, 15, 0.5, (value) => {
+        settingsManager.updateSetting('treeDensity', Number((value / 100).toFixed(3)));
+      }, '%')
+    );
+    content.appendChild(
+      createSlider('洞穴阈值 (越大越少)', settings.caveThreshold, 0.45, 0.85, 0.01, (value) => {
+        settingsManager.updateSetting('caveThreshold', Number(value.toFixed(2)));
+      })
+    );
+
+    // 重新生成地图按钮
+    if (onRegenerateWorld) {
+      const regenerateButton = document.createElement('button');
+      regenerateButton.textContent = '🌍 重新生成地图';
+      regenerateButton.className = 'settings-button regenerate';
+      regenerateButton.style.width = '100%';
+      regenerateButton.style.marginTop = '10px';
+      regenerateButton.onclick = () => {
+        const shouldRegenerate =
+          typeof window !== 'undefined' && typeof window.confirm === 'function'
+            ? window.confirm('确定要重新生成地图吗？这将清除当前世界的所有方块！')
+            : true;
+        if (shouldRegenerate) {
+          onRegenerateWorld();
+          close();
+        }
+      };
+      content.appendChild(regenerateButton);
+    }
+  }
+
+  renderAllSettings();
   panel.appendChild(content);
 
   // 按钮组
@@ -251,50 +339,7 @@ export function initSettings(settingsManager: SettingsManager): {
   resetButton.className = 'settings-button reset';
   resetButton.onclick = () => {
     settingsManager.reset();
-    // 重新创建所有控件以反映重置后的值
-    content.innerHTML = '';
-    const newSettings = settingsManager.getSettings();
-    
-    content.appendChild(createSection('🔊 音频设置'));
-    content.appendChild(createSlider('主音量', newSettings.masterVolume, 0, 1, 0.01, (value) => {
-      settingsManager.updateSetting('masterVolume', value);
-    }));
-    content.appendChild(createSlider('音乐音量', newSettings.musicVolume, 0, 1, 0.01, (value) => {
-      settingsManager.updateSetting('musicVolume', value);
-    }));
-    content.appendChild(createSlider('音效音量', newSettings.sfxVolume, 0, 1, 0.01, (value) => {
-      settingsManager.updateSetting('sfxVolume', value);
-    }));
-    content.appendChild(createToggle('背景音乐', newSettings.musicEnabled, (value) => {
-      settingsManager.updateSetting('musicEnabled', value);
-    }));
-    content.appendChild(createToggle('音效', newSettings.sfxEnabled, (value) => {
-      settingsManager.updateSetting('sfxEnabled', value);
-    }));
-
-    content.appendChild(createSection('🎨 图形设置'));
-    content.appendChild(createSlider('渲染距离', newSettings.renderDistance, 2, 8, 1, (value) => {
-      settingsManager.updateSetting('renderDistance', value);
-    }, ' Chunk'));
-    content.appendChild(createSlider('视野 (FOV)', newSettings.fov, 60, 110, 5, (value) => {
-      settingsManager.updateSetting('fov', value);
-    }, '°'));
-    content.appendChild(createToggle('显示 FPS', newSettings.showFPS, (value) => {
-      settingsManager.updateSetting('showFPS', value);
-    }));
-
-    content.appendChild(createSection('🎮 控制设置'));
-    content.appendChild(createSlider('鼠标灵敏度', newSettings.mouseSensitivity * 1000, 0.5, 5, 0.1, (value) => {
-      settingsManager.updateSetting('mouseSensitivity', value / 1000);
-    }));
-    content.appendChild(createToggle('虚拟按键（移动端）', newSettings.virtualControls, (value) => {
-      settingsManager.updateSetting('virtualControls', value);
-    }));
-
-    content.appendChild(createSection('🌍 游戏玩法'));
-    content.appendChild(createToggle('真实重力模式', newSettings.realGravity, (value) => {
-      settingsManager.updateSetting('realGravity', value);
-    }));
+    renderAllSettings();
   };
 
   const closeButton = document.createElement('button');

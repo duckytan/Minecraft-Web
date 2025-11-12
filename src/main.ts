@@ -16,6 +16,7 @@ import { SaveManager } from './save/saveManager';
 import { initSaveControls } from './ui/saveControls';
 import { SoundManager, SoundType } from './audio/soundManager';
 import { SettingsManager, initSettings } from './ui/settings';
+import type { GameSettings } from './ui/settings';
 import { GravitySystem } from './physics/gravity';
 
 class Game {
@@ -140,8 +141,11 @@ class Game {
     // 如果 Worker 初始化失败，会自动回退到同步生成
     this.chunkManager.initWorker();
 
+    // 应用地图生成配置
+    this.applyTerrainSettings(settings);
+
     // 生成初始地形（使用高级地形生成器）
-    // 使用默认配置：山峰、山谷、湖泊、树木
+    // 使用默认配置：山峰、山谷、湖泊、树木、洞穴
     this.chunkManager.generateTerrain(0, 0, settings.renderDistance);
 
     // 将玩家设置到安全的初始位置（高于地形）
@@ -207,8 +211,10 @@ class Game {
     this.saveManager = new SaveManager(this.chunkManager, this.player);
     initSaveControls(this.saveManager);
 
-    // 初始化设置界面
-    this.settingsUI = initSettings(this.settingsManager);
+    // 初始化设置界面（并传入重新生成地图的回调）
+    this.settingsUI = initSettings(this.settingsManager, () => {
+      this.regenerateWorld();
+    });
 
     // 监听设置变化
     this.settingsManager.onSettingsChanged((newSettings) => {
@@ -242,6 +248,9 @@ class Game {
         this.gravitySystem.disable();
       }
 
+      // 更新地形生成配置（影响后续加载的 Chunk）
+      this.applyTerrainSettings(newSettings);
+
       // 注意：渲染距离变化需要重新生成地形，此处仅更新 ChunkManager
       // 实际应用中可能需要清空并重新加载 Chunk
       console.log('⚙️ 设置已更新');
@@ -250,7 +259,7 @@ class Game {
     this.setupEventListeners();
 
     console.log('✅ 游戏初始化完成（高级地形系统已启用）');
-    console.log('🌍 地形特性：山峰、山谷、湖泊、树木、基岩底板');
+    console.log('🌍 地形特性：山峰、山谷、湖泊、树木、灌木、洞穴、生物群系、基岩底板');
     console.log('🎮 操作提示：');
     console.log('  - WASD: 移动 / 游泳');
     console.log('  - Space: 跳跃 / 飞行上升 / 游泳上升');
@@ -261,7 +270,7 @@ class Game {
     console.log('  - 1-9: 切换方块类型（包含基岩和水）');
     console.log('  - F5: 保存游戏');
     console.log('  - F9: 加载游戏');
-    console.log('  - O: 打开设置菜单 ⚙️');
+    console.log('  - O: 打开设置菜单 ⚙️（可调整地图生成参数并重新生成）');
     console.log(`📦 已加载 ${this.chunkManager.getLoadedChunkCount()} 个 Chunk`);
 
     // 检查是否有存档
@@ -276,6 +285,41 @@ class Game {
     if (settings.realGravity) {
       console.log('🌍 真实重力模式已启用');
     }
+  }
+
+  private applyTerrainSettings(settings: GameSettings): void {
+    const baseHeight = Math.max(settings.waterLevel + 2, 16);
+    this.chunkManager.updateTerrainConfig({
+      scale: settings.terrainScale,
+      heightMultiplier: settings.terrainHeight,
+      baseHeight,
+      waterLevel: settings.waterLevel,
+      treeChance: Math.max(0, Math.min(settings.treeDensity, 0.3)),
+      caveThreshold: settings.caveThreshold
+    });
+  }
+
+  private regenerateWorld(): void {
+    console.log('🌍 开始重新生成世界...');
+
+    // 清除所有 Chunk
+    this.chunkManager.clearAll();
+
+    // 刷新随机种子（这样每次重新生成都会得到不同的地形）
+    this.chunkManager.refreshTerrainSeed();
+
+    // 应用当前地形设置
+    const settings = this.settingsManager.getSettings();
+    this.applyTerrainSettings(settings);
+
+    // 重新生成初始地形
+    this.chunkManager.generateTerrain(0, 0, settings.renderDistance);
+
+    // 将玩家重置到安全位置
+    const safeY = Math.max(settings.waterLevel + settings.terrainHeight + 12, 35);
+    this.player.setPosition(0, safeY, 0);
+
+    console.log('✅ 世界重新生成完成！');
   }
 
   private setupEventListeners(): void {
