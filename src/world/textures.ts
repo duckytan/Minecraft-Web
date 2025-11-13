@@ -51,8 +51,25 @@ export class BlockTextureGenerator {
       case BlockType.WATER:
         this.generateWaterTexture(ctx);
         break;
+      case BlockType.SAND:
+        this.generateSandTexture(ctx);
+        break;
+      case BlockType.SNOW:
+        this.generateSnowTexture(ctx);
+        break;
+      case BlockType.GLASS:
+        this.generateGlassTexture(ctx);
+        break;
+      case BlockType.LAVA:
+        this.generateLavaTexture(ctx);
+        break;
+      case BlockType.OBSIDIAN:
+        this.generateObsidianTexture(ctx);
+        break;
+      case BlockType.COAL_ORE:
+        this.generateCoalOreTexture(ctx);
+        break;
       default:
-        // 默认纯色
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, TEXTURE_SIZE, TEXTURE_SIZE);
     }
@@ -75,32 +92,34 @@ export class BlockTextureGenerator {
    */
   private static generateGrassTexture(ctx: CanvasRenderingContext2D, face: string): void {
     if (face === 'top') {
-      // 草地顶部
-      ctx.fillStyle = '#5a9e3d';
+      ctx.fillStyle = '#7ec850';
       ctx.fillRect(0, 0, TEXTURE_SIZE, TEXTURE_SIZE);
 
-      // 添加深浅杂点
-      for (let i = 0; i < 40; i++) {
+      for (let i = 0; i < 45; i++) {
         const x = Math.floor(Math.random() * TEXTURE_SIZE);
         const y = Math.floor(Math.random() * TEXTURE_SIZE);
-        const brightness = Math.random() > 0.5 ? 20 : -20;
-        const color = this.adjustBrightness('#5a9e3d', brightness);
+        const brightness = Math.random() > 0.5 ? 25 : -25;
+        const color = this.adjustBrightness('#7ec850', brightness);
         ctx.fillStyle = color;
         ctx.fillRect(x, y, 1, 1);
       }
+
+      for (let i = 0; i < 8; i++) {
+        const x = Math.floor(Math.random() * TEXTURE_SIZE);
+        const y = Math.floor(Math.random() * TEXTURE_SIZE);
+        ctx.fillStyle = '#5a9e3d';
+        ctx.fillRect(x, y, 2, 1);
+      }
     } else if (face === 'side') {
-      // 草方块侧面（上半绿色，下半棕色）
-      ctx.fillStyle = '#5a9e3d';
+      ctx.fillStyle = '#7ec850';
       ctx.fillRect(0, 0, TEXTURE_SIZE, TEXTURE_SIZE / 2);
 
-      ctx.fillStyle = '#8b6f47';
+      ctx.fillStyle = '#9b7653';
       ctx.fillRect(0, TEXTURE_SIZE / 2, TEXTURE_SIZE, TEXTURE_SIZE / 2);
 
-      // 添加过渡带
-      ctx.fillStyle = 'rgba(139, 111, 71, 0.3)';
+      ctx.fillStyle = 'rgba(155, 118, 83, 0.4)';
       ctx.fillRect(0, TEXTURE_SIZE / 2 - 1, TEXTURE_SIZE, 2);
 
-      // 添加纹理细节
       for (let i = 0; i < 20; i++) {
         const x = Math.floor(Math.random() * TEXTURE_SIZE);
         const y = Math.floor(Math.random() * TEXTURE_SIZE);
@@ -108,7 +127,6 @@ export class BlockTextureGenerator {
         ctx.fillRect(x, y, 1, 1);
       }
     } else {
-      // 底部使用泥土纹理
       this.generateDirtTexture(ctx);
     }
   }
@@ -118,20 +136,18 @@ export class BlockTextureGenerator {
    * - 棕色基础 + 随机颗粒
    */
   private static generateDirtTexture(ctx: CanvasRenderingContext2D): void {
-    ctx.fillStyle = '#8b6f47';
+    ctx.fillStyle = '#9b7653';
     ctx.fillRect(0, 0, TEXTURE_SIZE, TEXTURE_SIZE);
 
-    // 添加颗粒感
     for (let i = 0; i < 60; i++) {
       const x = Math.floor(Math.random() * TEXTURE_SIZE);
       const y = Math.floor(Math.random() * TEXTURE_SIZE);
       const brightness = Math.random() * 40 - 20;
-      const color = this.adjustBrightness('#8b6f47', brightness);
+      const color = this.adjustBrightness('#9b7653', brightness);
       ctx.fillStyle = color;
       ctx.fillRect(x, y, 1, 1);
     }
 
-    // 添加一些小块状纹理
     for (let i = 0; i < 8; i++) {
       const x = Math.floor(Math.random() * TEXTURE_SIZE);
       const y = Math.floor(Math.random() * TEXTURE_SIZE);
@@ -145,20 +161,18 @@ export class BlockTextureGenerator {
    * - 灰色基础 + 裂纹 + 颜色变化
    */
   private static generateStoneTexture(ctx: CanvasRenderingContext2D): void {
-    ctx.fillStyle = '#7a7a7a';
+    ctx.fillStyle = '#999999';
     ctx.fillRect(0, 0, TEXTURE_SIZE, TEXTURE_SIZE);
 
-    // 添加深浅变化
     for (let i = 0; i < 80; i++) {
       const x = Math.floor(Math.random() * TEXTURE_SIZE);
       const y = Math.floor(Math.random() * TEXTURE_SIZE);
       const brightness = Math.random() * 30 - 15;
-      const color = this.adjustBrightness('#7a7a7a', brightness);
+      const color = this.adjustBrightness('#999999', brightness);
       ctx.fillStyle = color;
       ctx.fillRect(x, y, 1, 1);
     }
 
-    // 添加裂纹
     ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
     ctx.lineWidth = 1;
     for (let i = 0; i < 5; i++) {
@@ -180,29 +194,26 @@ export class BlockTextureGenerator {
    * - 侧面：垂直纹理
    */
   private static generateWoodTexture(ctx: CanvasRenderingContext2D, face: string): void {
-    ctx.fillStyle = '#8b5a2b';
+    ctx.fillStyle = '#a0724e';
     ctx.fillRect(0, 0, TEXTURE_SIZE, TEXTURE_SIZE);
 
     if (face === 'top' || face === 'bottom') {
-      // 年轮纹理（同心圆）
       const centerX = TEXTURE_SIZE / 2;
       const centerY = TEXTURE_SIZE / 2;
 
       for (let radius = 2; radius < TEXTURE_SIZE / 2; radius += 2) {
-        ctx.strokeStyle = this.adjustBrightness('#8b5a2b', (radius % 4 === 0 ? -15 : -5));
+        ctx.strokeStyle = this.adjustBrightness('#a0724e', radius % 4 === 0 ? -18 : -6);
         ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
         ctx.stroke();
       }
     } else {
-      // 侧面垂直纹理
       for (let x = 0; x < TEXTURE_SIZE; x += 2) {
-        ctx.fillStyle = this.adjustBrightness('#8b5a2b', x % 4 === 0 ? -10 : -5);
+        ctx.fillStyle = this.adjustBrightness('#a0724e', x % 4 === 0 ? -12 : -6);
         ctx.fillRect(x, 0, 1, TEXTURE_SIZE);
       }
 
-      // 添加一些随机纹理
       for (let i = 0; i < 10; i++) {
         const x = Math.floor(Math.random() * TEXTURE_SIZE);
         const y = Math.floor(Math.random() * TEXTURE_SIZE);
@@ -217,20 +228,18 @@ export class BlockTextureGenerator {
    * - 绿色基础 + 随机孔洞
    */
   private static generateLeavesTexture(ctx: CanvasRenderingContext2D): void {
-    ctx.fillStyle = '#3d8b3d';
+    ctx.fillStyle = '#4caf50';
     ctx.fillRect(0, 0, TEXTURE_SIZE, TEXTURE_SIZE);
 
-    // 添加深浅变化
     for (let i = 0; i < 60; i++) {
       const x = Math.floor(Math.random() * TEXTURE_SIZE);
       const y = Math.floor(Math.random() * TEXTURE_SIZE);
       const brightness = Math.random() * 40 - 20;
-      const color = this.adjustBrightness('#3d8b3d', brightness);
+      const color = this.adjustBrightness('#4caf50', brightness);
       ctx.fillStyle = color;
       ctx.fillRect(x, y, 1, 1);
     }
 
-    // 添加孔洞（透明感）
     for (let i = 0; i < 15; i++) {
       const x = Math.floor(Math.random() * TEXTURE_SIZE);
       const y = Math.floor(Math.random() * TEXTURE_SIZE);
@@ -238,7 +247,6 @@ export class BlockTextureGenerator {
       ctx.fillRect(x, y, 1, 1);
     }
 
-    // 添加亮点（光照效果）
     for (let i = 0; i < 10; i++) {
       const x = Math.floor(Math.random() * TEXTURE_SIZE);
       const y = Math.floor(Math.random() * TEXTURE_SIZE);
@@ -282,21 +290,19 @@ export class BlockTextureGenerator {
    * - 深黑色基础 + 细微裂纹
    */
   private static generateBedrockTexture(ctx: CanvasRenderingContext2D): void {
-    ctx.fillStyle = '#1a1a1a';
+    ctx.fillStyle = '#2a2a2a';
     ctx.fillRect(0, 0, TEXTURE_SIZE, TEXTURE_SIZE);
 
-    // 添加深浅变化（非常细微）
     for (let i = 0; i < 30; i++) {
       const x = Math.floor(Math.random() * TEXTURE_SIZE);
       const y = Math.floor(Math.random() * TEXTURE_SIZE);
       const brightness = Math.random() * 20 - 10;
-      const color = this.adjustBrightness('#1a1a1a', brightness);
+      const color = this.adjustBrightness('#2a2a2a', brightness);
       ctx.fillStyle = color;
       ctx.fillRect(x, y, 1, 1);
     }
 
-    // 添加裂纹
-    ctx.strokeStyle = 'rgba(100, 100, 100, 0.3)';
+    ctx.strokeStyle = 'rgba(120, 120, 120, 0.3)';
     ctx.lineWidth = 1;
     for (let i = 0; i < 8; i++) {
       ctx.beginPath();
@@ -315,21 +321,134 @@ export class BlockTextureGenerator {
    * - 蓝色基础 + 波纹效果
    */
   private static generateWaterTexture(ctx: CanvasRenderingContext2D): void {
-    ctx.fillStyle = '#4a90e2';
+    ctx.fillStyle = '#4fc3f7';
     ctx.fillRect(0, 0, TEXTURE_SIZE, TEXTURE_SIZE);
 
-    // 添加波纹（水平线）
     for (let y = 0; y < TEXTURE_SIZE; y += 2) {
-      const brightness = Math.sin(y * 0.5) * 15;
-      ctx.fillStyle = this.adjustBrightness('#4a90e2', brightness);
+      const brightness = Math.sin(y * 0.6) * 18;
+      ctx.fillStyle = this.adjustBrightness('#4fc3f7', brightness);
       ctx.fillRect(0, y, TEXTURE_SIZE, 1);
     }
 
-    // 添加随机亮点（反光效果）
-    for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < 18; i++) {
       const x = Math.floor(Math.random() * TEXTURE_SIZE);
       const y = Math.floor(Math.random() * TEXTURE_SIZE);
       ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+      ctx.fillRect(x, y, 1, 1);
+    }
+  }
+
+  private static generateSandTexture(ctx: CanvasRenderingContext2D): void {
+    ctx.fillStyle = '#edc9af';
+    ctx.fillRect(0, 0, TEXTURE_SIZE, TEXTURE_SIZE);
+
+    for (let i = 0; i < 50; i++) {
+      const x = Math.floor(Math.random() * TEXTURE_SIZE);
+      const y = Math.floor(Math.random() * TEXTURE_SIZE);
+      ctx.fillStyle = Math.random() > 0.5 ? '#d8b087' : '#f0d9be';
+      ctx.fillRect(x, y, 1, 1);
+    }
+
+    for (let y = 0; y < TEXTURE_SIZE; y += 4) {
+      ctx.fillStyle = 'rgba(216, 176, 135, 0.2)';
+      ctx.fillRect(0, y, TEXTURE_SIZE, 1);
+    }
+  }
+
+  private static generateSnowTexture(ctx: CanvasRenderingContext2D): void {
+    ctx.fillStyle = '#fdfdfd';
+    ctx.fillRect(0, 0, TEXTURE_SIZE, TEXTURE_SIZE);
+
+    for (let i = 0; i < 25; i++) {
+      const x = Math.floor(Math.random() * TEXTURE_SIZE);
+      const y = Math.floor(Math.random() * TEXTURE_SIZE);
+      const brightness = Math.random() > 0.6 ? 30 : -15;
+      ctx.fillStyle = this.adjustBrightness('#fdfdfd', brightness);
+      ctx.fillRect(x, y, 1, 1);
+    }
+
+    const gradient = ctx.createLinearGradient(0, 0, 0, TEXTURE_SIZE);
+    gradient.addColorStop(0, 'rgba(210, 230, 255, 0.15)');
+    gradient.addColorStop(1, 'rgba(150, 180, 255, 0.1)');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, TEXTURE_SIZE, TEXTURE_SIZE);
+  }
+
+  private static generateGlassTexture(ctx: CanvasRenderingContext2D): void {
+    ctx.fillStyle = 'rgba(191, 231, 245, 0.55)';
+    ctx.fillRect(0, 0, TEXTURE_SIZE, TEXTURE_SIZE);
+
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(1, 1, TEXTURE_SIZE - 2, TEXTURE_SIZE - 2);
+
+    for (let i = 0; i < 4; i++) {
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+      ctx.fillRect(2 + i * 4, 2, 1, TEXTURE_SIZE - 4);
+    }
+
+    for (let i = 0; i < 4; i++) {
+      ctx.fillStyle = 'rgba(173, 216, 230, 0.3)';
+      ctx.fillRect(2, 2 + i * 4, TEXTURE_SIZE - 4, 1);
+    }
+  }
+
+  private static generateLavaTexture(ctx: CanvasRenderingContext2D): void {
+    ctx.fillStyle = '#ff6b35';
+    ctx.fillRect(0, 0, TEXTURE_SIZE, TEXTURE_SIZE);
+
+    for (let i = 0; i < 6; i++) {
+      ctx.strokeStyle = 'rgba(255, 255, 0, 0.5)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(Math.random() * TEXTURE_SIZE, Math.random() * TEXTURE_SIZE);
+      ctx.lineTo(Math.random() * TEXTURE_SIZE, Math.random() * TEXTURE_SIZE);
+      ctx.stroke();
+    }
+
+    for (let i = 0; i < 40; i++) {
+      const x = Math.floor(Math.random() * TEXTURE_SIZE);
+      const y = Math.floor(Math.random() * TEXTURE_SIZE);
+      const color = Math.random() > 0.5 ? '#ff9448' : '#d8491f';
+      ctx.fillStyle = color;
+      ctx.fillRect(x, y, 1, 1);
+    }
+  }
+
+  private static generateObsidianTexture(ctx: CanvasRenderingContext2D): void {
+    ctx.fillStyle = '#1a0933';
+    ctx.fillRect(0, 0, TEXTURE_SIZE, TEXTURE_SIZE);
+
+    for (let i = 0; i < 70; i++) {
+      const x = Math.floor(Math.random() * TEXTURE_SIZE);
+      const y = Math.floor(Math.random() * TEXTURE_SIZE);
+      const brightness = Math.random() * 40 - 20;
+      const color = this.adjustBrightness('#1a0933', brightness);
+      ctx.fillStyle = color;
+      ctx.fillRect(x, y, 1, 1);
+    }
+
+    ctx.strokeStyle = 'rgba(122, 86, 255, 0.25)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 5; i++) {
+      ctx.beginPath();
+      ctx.moveTo(Math.random() * TEXTURE_SIZE, Math.random() * TEXTURE_SIZE);
+      ctx.lineTo(Math.random() * TEXTURE_SIZE, Math.random() * TEXTURE_SIZE);
+      ctx.stroke();
+    }
+  }
+
+  private static generateCoalOreTexture(ctx: CanvasRenderingContext2D): void {
+    this.generateStoneTexture(ctx);
+
+    for (let i = 0; i < 12; i++) {
+      const x = Math.floor(Math.random() * (TEXTURE_SIZE - 2));
+      const y = Math.floor(Math.random() * (TEXTURE_SIZE - 2));
+      const size = Math.floor(Math.random() * 2) + 2;
+      ctx.fillStyle = '#1f1f1f';
+      ctx.fillRect(x, y, size, size);
+
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
       ctx.fillRect(x, y, 1, 1);
     }
   }
