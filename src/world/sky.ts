@@ -10,7 +10,7 @@ export interface SkySystemConfig {
 export class SkySystem {
   private scene: THREE.Scene;
   private sun: THREE.Mesh | null = null;
-  private clouds: THREE.Mesh[] = [];
+  private clouds: THREE.Group[] = [];
   private cloudSpeed: number;
   private sunLight: THREE.DirectionalLight | null = null;
 
@@ -78,9 +78,7 @@ export class SkySystem {
   private createSun(): void {
     const sunGeometry = new THREE.SphereGeometry(40, 32, 32);
     const sunMaterial = new THREE.MeshBasicMaterial({
-      color: 0xffff00,
-      emissive: 0xffff00,
-      emissiveIntensity: 1
+      color: 0xffff00
     });
 
     this.sun = new THREE.Mesh(sunGeometry, sunMaterial);
