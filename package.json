@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
+    "deploy": "npm run build && node -e \"console.log('\\n✅ 构建完成！\\n请将 dist/ 目录部署到服务器。\\n或使用: npx gh-pages -d dist\\n')\"",
     "lint": "eslint \"src/**/*.{ts,tsx}\"",
     "type-check": "tsc --noEmit",
     "test": "vitest",
