@@ -10,6 +10,7 @@ import { MouseLookController } from './input/mouse';
 import { VirtualControls } from './input/virtualControls';
 import { Player } from './player';
 import { BlockActionController } from './interaction/blockAction';
+import { SkySystem } from './world/sky';
 import { initHUD } from './ui/hud';
 import { initHotbar } from './ui/hotbar';
 import { SaveManager } from './save/saveManager';
@@ -54,11 +55,13 @@ class Game {
 
   private readonly gravitySystem: GravitySystem;
 
+  private readonly skySystem: SkySystem;
+
   private blockActionController: BlockActionController | null = null;
 
   private lastChunkUpdate = 0;
 
-  private readonly chunkUpdateInterval = 0.5; // 每0.5秒更新一次
+  private readonly chunkUpdateInterval = 0.5;
 
   constructor() {
     this.scene = createScene();
@@ -151,14 +154,19 @@ class Game {
     // 将玩家设置到安全的初始位置（高于地形）
     this.player.setPosition(0, 35, 0);
 
-    // 创建 World 并集成 ChunkManager
     this.world = new World(this.scene, this.chunkManager);
 
-    // 初始化重力系统
     this.gravitySystem = new GravitySystem(this.chunkManager, this.scene);
     if (settings.realGravity) {
       this.gravitySystem.enable();
     }
+
+    this.skySystem = new SkySystem(this.scene, {
+      enableSun: true,
+      enableClouds: true,
+      cloudCount: 15,
+      cloudSpeed: 0.5
+    });
 
     this.blockActionController = new BlockActionController(
       this.world,
@@ -357,8 +365,9 @@ class Game {
     // 更新玩家（不再传递 colliders，使用 ChunkManager 的方块检测）
     this.player.update(deltaTime);
 
-    // 更新重力系统
     this.gravitySystem.update(deltaTime);
+
+    this.skySystem.update(deltaTime);
 
     this.renderer.render(this.scene, this.camera);
 
