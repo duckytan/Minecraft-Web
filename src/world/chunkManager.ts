@@ -8,6 +8,13 @@ import {
   type AdvancedTerrainConfig
 } from './advancedTerrain';
 
+export interface BlockChange {
+  x: number;
+  y: number;
+  z: number;
+  type: BlockType;
+}
+
 /**
  * ChunkManager 类 - 管理所有 Chunk 的生命周期
  */
@@ -115,10 +122,11 @@ export class ChunkManager {
     const coords = Chunk.worldToChunkCoords(worldX, worldZ);
     const chunk = this.getOrCreateChunk(coords.chunkX, coords.chunkZ);
 
-    chunk.setBlock(coords.localX, worldY, coords.localZ, blockType);
+    const changed = chunk.setBlock(coords.localX, worldY, coords.localZ, blockType);
 
-    // 重新生成网格
-    chunk.generateMesh();
+    if (changed) {
+      chunk.generateMesh();
+    }
   }
 
   /**
@@ -133,6 +141,38 @@ export class ChunkManager {
     }
 
     return chunk.getBlock(coords.localX, worldY, coords.localZ);
+  }
+
+  /**
+   * 批量应用方块变化（用于方块物理系统）
+   * 优化性能：按 chunk 分组，每个 chunk 只重新生成一次网格
+   */
+  public applyBlockChanges(changes: BlockChange[]): void {
+    if (changes.length === 0) {
+      return;
+    }
+
+    const affectedChunks = new Set<string>();
+
+    for (const change of changes) {
+      const coords = Chunk.worldToChunkCoords(change.x, change.z);
+      const chunk = this.getChunk(coords.chunkX, coords.chunkZ);
+
+      if (!chunk) {
+        continue;
+      }
+
+      chunk.setBlock(coords.localX, change.y, coords.localZ, change.type);
+      affectedChunks.add(chunk.getKey());
+    }
+
+    for (const chunkKey of affectedChunks) {
+      const [chunkX, chunkZ] = chunkKey.split(',').map(Number);
+      const chunk = this.getChunk(chunkX, chunkZ);
+      if (chunk) {
+        chunk.generateMesh();
+      }
+    }
   }
 
   /**

@@ -17,6 +17,7 @@ export class Chunk {
   private blocks: Uint8Array; // 使用 Uint8Array 节省内存
   private mesh: THREE.Mesh | null = null;
   private readonly scene: THREE.Scene;
+  private version = 0;
 
   constructor(chunkX: number, chunkZ: number, scene: THREE.Scene) {
     this.chunkX = chunkX;
@@ -41,12 +42,19 @@ export class Chunk {
   /**
    * 设置方块类型
    */
-  public setBlock(x: number, y: number, z: number, blockType: BlockType): void {
+  public setBlock(x: number, y: number, z: number, blockType: BlockType): boolean {
     if (x < 0 || x >= CHUNK_SIZE || y < 0 || y >= CHUNK_HEIGHT || z < 0 || z >= CHUNK_SIZE) {
-      return;
+      return false;
     }
+
     const index = this.getBlockIndex(x, y, z);
+    if (this.blocks[index] === blockType) {
+      return false;
+    }
+
     this.blocks[index] = blockType;
+    this.version++;
+    return true;
   }
 
   /**
@@ -57,6 +65,7 @@ export class Chunk {
       throw new Error('Invalid block data length for chunk');
     }
     this.blocks = blocks;
+    this.version++;
   }
 
   /**
