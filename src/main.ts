@@ -66,6 +66,8 @@ class Game {
 
   private readonly chunkUpdateInterval = 0.5;
 
+  private isContextLost = false;
+
   constructor() {
     this.scene = createScene();
     this.camera = createCamera();
@@ -355,6 +357,32 @@ class Game {
         this.settingsUI.toggle();
       }
     });
+
+    // 监听页面可见性变化，当页面重新可见时恢复方块渲染
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) {
+        console.log('📱 页面重新可见，检查并恢复方块渲染...');
+        // 延迟一小段时间以确保 WebGL 上下文完全恢复
+        setTimeout(() => {
+          if (!this.isContextLost) {
+            this.chunkManager.regenerateAllMeshes();
+          }
+        }, 100);
+      }
+    });
+
+    // 监听 WebGL 上下文丢失和恢复事件
+    this.renderer.domElement.addEventListener('webglcontextlost', (event) => {
+      event.preventDefault();
+      this.isContextLost = true;
+      console.warn('⚠️ WebGL 上下文丢失');
+    });
+
+    this.renderer.domElement.addEventListener('webglcontextrestored', () => {
+      console.log('✅ WebGL 上下文已恢复，重新生成方块网格...');
+      this.isContextLost = false;
+      this.chunkManager.regenerateAllMeshes();
+    });
   }
 
   start(): void {
@@ -367,6 +395,11 @@ class Game {
     this.hud.stats.begin();
 
     const deltaTime = this.clock.getDelta();
+
+    if (this.isContextLost) {
+      this.hud.stats.end();
+      return;
+    }
 
     // 定期更新 Chunk
     this.lastChunkUpdate += deltaTime;

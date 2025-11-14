@@ -453,4 +453,19 @@ export class ChunkManager {
   public getAllChunks(): Chunk[] {
     return Array.from(this.chunks.values());
   }
+
+  /**
+   * 重新生成所有已加载 Chunk 的网格
+   * 用于恢复页面可见性或 WebGL 上下文丢失后的场景
+   */
+  public regenerateAllMeshes(): void {
+    console.log('🔄 重新生成所有 Chunk 网格...');
+    let count = 0;
+    for (const chunk of this.chunks.values()) {
+      // 只重新生成有方块数据的 chunk
+      chunk.generateMesh();
+      count++;
+    }
+    console.log(`✅ 已重新生成 ${count} 个 Chunk 的网格`);
+  }
 }
