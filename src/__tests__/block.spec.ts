@@ -14,11 +14,11 @@ describe('Block Types', () => {
 
   it('should have correct colors for all block types', () => {
     expect(BLOCK_COLORS[BlockType.AIR]).toBe(0x000000);
-    expect(BLOCK_COLORS[BlockType.GRASS]).toBe(0x5cb85c);
-    expect(BLOCK_COLORS[BlockType.DIRT]).toBe(0x8b6f47);
-    expect(BLOCK_COLORS[BlockType.STONE]).toBe(0x808080);
-    expect(BLOCK_COLORS[BlockType.WOOD]).toBe(0x8b4513);
-    expect(BLOCK_COLORS[BlockType.LEAVES]).toBe(0x228b22);
+    expect(BLOCK_COLORS[BlockType.GRASS]).toBe(0x7ec850);
+    expect(BLOCK_COLORS[BlockType.DIRT]).toBe(0x9b7653);
+    expect(BLOCK_COLORS[BlockType.STONE]).toBe(0x999999);
+    expect(BLOCK_COLORS[BlockType.WOOD]).toBe(0xa0724e);
+    expect(BLOCK_COLORS[BlockType.LEAVES]).toBe(0x4caf50);
   });
 
   it('should have correct block size', () => {
