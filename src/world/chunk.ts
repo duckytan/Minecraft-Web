@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { BlockType, BLOCK_SIZE } from './block';
-import { BlockTextureGenerator } from './textures';
+import { MaterialManager } from './materialManager';
 
 /**
  * Chunk 尺寸常量
@@ -116,6 +116,7 @@ export class Chunk {
     const groups: Array<{ start: number; count: number; materialIndex: number }> = [];
     const materials: THREE.MeshLambertMaterial[] = [];
     const materialMap = new Map<string, number>();
+    const materialManager = MaterialManager.getInstance();
 
     // 世界坐标偏移
     const worldOffsetX = this.chunkX * CHUNK_SIZE;
@@ -145,7 +146,8 @@ export class Chunk {
             indices,
             groups,
             materials,
-            materialMap
+            materialMap,
+            materialManager
           );
         }
       }
@@ -190,7 +192,8 @@ export class Chunk {
     indices: number[],
     groups: Array<{ start: number; count: number; materialIndex: number }>,
     materials: THREE.MeshLambertMaterial[],
-    materialMap: Map<string, number>
+    materialMap: Map<string, number>,
+    materialManager: MaterialManager
   ): void {
     const halfSize = BLOCK_SIZE / 2;
     const wx = worldX * BLOCK_SIZE;
@@ -297,12 +300,7 @@ export class Chunk {
       let materialIndex = materialMap.get(materialKey);
 
       if (materialIndex === undefined) {
-        const texture = BlockTextureGenerator.getTexture(blockType, face.faceType);
-        const material = new THREE.MeshLambertMaterial({
-          map: texture,
-          transparent: blockType === BlockType.WATER,
-          opacity: blockType === BlockType.WATER ? 0.6 : 1.0
-        });
+        const material = materialManager.getMaterial(blockType, face.faceType);
         materialIndex = materials.length;
         materials.push(material);
         materialMap.set(materialKey, materialIndex);

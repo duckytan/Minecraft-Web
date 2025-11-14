@@ -20,6 +20,9 @@ import { SettingsManager, initSettings } from './ui/settings';
 import type { GameSettings } from './ui/settings';
 import { GravitySystem } from './physics/gravity';
 import { BlockPhysicsSystem } from './physics/blockPhysics';
+import { FrustumCulling } from './core/frustumCulling';
+import { PerformanceMonitor } from './ui/performanceMonitor';
+import { MaterialManager } from './world/materialManager';
 
 class Game {
   private readonly scene: THREE.Scene;
@@ -60,11 +63,21 @@ class Game {
 
   private readonly skySystem: SkySystem;
 
+  private readonly frustumCulling: FrustumCulling;
+
+  private readonly performanceMonitor: PerformanceMonitor;
+
   private blockActionController: BlockActionController | null = null;
 
   private lastChunkUpdate = 0;
 
   private readonly chunkUpdateInterval = 0.5;
+
+  private lastCullingUpdate = 0;
+
+  private readonly cullingInterval = 0.2;
+
+  private visibleChunkCount = 0;
 
   private isContextLost = false;
 
@@ -173,9 +186,12 @@ class Game {
     this.skySystem = new SkySystem(this.scene, {
       enableSun: true,
       enableClouds: true,
-      cloudCount: 15,
-      cloudSpeed: 0.5
+      cloudCount: 6,
+      cloudSpeed: 0.3
     });
+
+    this.frustumCulling = new FrustumCulling();
+    this.performanceMonitor = new PerformanceMonitor();
 
     this.blockActionController = new BlockActionController(
       this.world,
@@ -294,6 +310,7 @@ class Game {
     console.log('  - F5: 保存游戏');
     console.log('  - F9: 加载游戏');
     console.log('  - O: 打开设置菜单 ⚙️（可调整地图生成参数并重新生成）');
+    console.log('  - P: 切换性能监视器 📊');
     console.log(`📦 已加载 ${this.chunkManager.getLoadedChunkCount()} 个 Chunk`);
 
     // 检查是否有存档
@@ -351,10 +368,12 @@ class Game {
       this.renderer.setSize(window.innerWidth, window.innerHeight);
     });
 
-    // O 键打开设置
+    // O 键打开设置，P 键切换性能监视器
     window.addEventListener('keydown', (e) => {
       if (e.key === 'o' || e.key === 'O') {
         this.settingsUI.toggle();
+      } else if (e.key === 'p' || e.key === 'P') {
+        this.performanceMonitor.toggle();
       }
     });
 
@@ -408,6 +427,15 @@ class Game {
       this.lastChunkUpdate = 0;
     }
 
+    this.lastCullingUpdate += deltaTime;
+    if (this.lastCullingUpdate >= this.cullingInterval) {
+      this.frustumCulling.updateFrustum(this.camera);
+      const chunks = this.chunkManager.getAllChunks();
+      const { visible } = this.frustumCulling.applyCulling(chunks);
+      this.visibleChunkCount = visible;
+      this.lastCullingUpdate = 0;
+    }
+
     // 更新玩家（不再传递 colliders，使用 ChunkManager 的方块检测）
     this.player.update(deltaTime);
 
@@ -418,8 +446,17 @@ class Game {
 
     this.renderer.render(this.scene, this.camera);
 
+    this.performanceMonitor.update({
+      chunkCount: this.chunkManager.getLoadedChunkCount(),
+      visibleChunks: this.visibleChunkCount,
+      materialCount: MaterialManager.getInstance().getMaterialCount(),
+      triangles: this.renderer.info.render.triangles,
+      fps: deltaTime > 0 ? 1 / deltaTime : 0
+    });
+
     this.hud.stats.end();
   };
+
 }
 
 const game = new Game();
