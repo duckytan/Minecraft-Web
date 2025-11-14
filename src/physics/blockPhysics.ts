@@ -141,7 +141,6 @@ export class BlockPhysicsSystem {
   }
 
   private tryFlowWater(x: number, y: number, z: number, planned: PlannedChanges): boolean {
-    const sourceKey = this.getBlockKey(x, y, z);
     const currentType = this.getPlannedBlockType(x, y, z, planned);
 
     if (currentType !== BlockType.WATER) {
