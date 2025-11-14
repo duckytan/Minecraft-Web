@@ -26,7 +26,7 @@ const DEFAULT_SETTINGS: GameSettings = {
   sfxVolume: 0.8,
   musicEnabled: true,
   sfxEnabled: true,
-  renderDistance: 4,
+  renderDistance: 3,
   fov: 75,
   mouseSensitivity: 0.002,
   showFPS: true,
@@ -67,7 +67,8 @@ export class SettingsManager {
     // 检测移动设备，自动启用虚拟按键
     if (isMobileDevice()) {
       settings.virtualControls = true;
-      console.log('📱 检测到移动设备，自动启用虚拟按键');
+      settings.renderDistance = 2;
+      console.log('📱 检测到移动设备，自动启用虚拟按键并降低渲染距离');
     }
     
     return settings;

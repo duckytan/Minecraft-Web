@@ -33,16 +33,16 @@ export class BlockPhysicsSystem {
   private readonly chunkManager: ChunkManager;
   private enabled = true;
   private accumulator = 0;
-  private readonly updateInterval = 0.5; // 每 0.5 秒进行一次物理更新
+  private readonly updateInterval = 1.0; // 每 1 秒进行一次物理更新（降低频率以提升性能）
 
-  private readonly waterChunkSample = 4;
-  private readonly sandChunkSample = 4;
-  private readonly soilChunkSample = 3;
-  private readonly snowChunkSample = 3;
+  private readonly waterChunkSample = 3;
+  private readonly sandChunkSample = 3;
+  private readonly soilChunkSample = 2;
+  private readonly snowChunkSample = 2;
 
-  private readonly maxWaterUpdatesPerStep = 40;
-  private readonly maxSandUpdatesPerStep = 40;
-  private readonly maxNewTimersPerStep = 50;
+  private readonly maxWaterUpdatesPerStep = 25;
+  private readonly maxSandUpdatesPerStep = 25;
+  private readonly maxNewTimersPerStep = 30;
 
   private readonly dirtTimers = new Map<string, BlockTimer>();
   private readonly grassTimers = new Map<string, BlockTimer>();
