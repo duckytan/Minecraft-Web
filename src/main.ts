@@ -19,6 +19,7 @@ import { SoundManager, SoundType } from './audio/soundManager';
 import { SettingsManager, initSettings } from './ui/settings';
 import type { GameSettings } from './ui/settings';
 import { GravitySystem } from './physics/gravity';
+import { BlockPhysicsSystem } from './physics/blockPhysics';
 
 class Game {
   private readonly scene: THREE.Scene;
@@ -54,6 +55,8 @@ class Game {
   private readonly virtualControls: VirtualControls;
 
   private readonly gravitySystem: GravitySystem;
+
+  private readonly blockPhysicsSystem: BlockPhysicsSystem;
 
   private readonly skySystem: SkySystem;
 
@@ -160,6 +163,10 @@ class Game {
     if (settings.realGravity) {
       this.gravitySystem.enable();
     }
+
+    // 初始化方块物理系统（水流动、沙掉落、草地变化、雪融化等）
+    this.blockPhysicsSystem = new BlockPhysicsSystem(this.chunkManager);
+    this.blockPhysicsSystem.enable();
 
     this.skySystem = new SkySystem(this.scene, {
       enableSun: true,
@@ -268,6 +275,12 @@ class Game {
 
     console.log('✅ 游戏初始化完成（高级地形系统已启用）');
     console.log('🌍 地形特性：山峰、山谷、湖泊、树木、灌木、洞穴、生物群系、基岩底板');
+    console.log('⚡ 方块物理特性：');
+    console.log('  - 💧 水方块: 会向下流动（优先级：下→东→南→西→北）');
+    console.log('  - 🏜️ 沙方块: 下方无支撑时掉落');
+    console.log('  - 🌱 泥土方块: 周围3格内有水时，过一段时间变成草方块');
+    console.log('  - 🌿 草方块: 周围3格内无水时，过一段时间变成泥土方块');
+    console.log('  - ❄️ 雪方块: 暴露在上方时融化成水（相邻雪方块越多融化越慢）');
     console.log('🎮 操作提示：');
     console.log('  - WASD: 移动 / 游泳');
     console.log('  - Space: 跳跃 / 飞行上升 / 游泳上升');
@@ -366,6 +379,7 @@ class Game {
     this.player.update(deltaTime);
 
     this.gravitySystem.update(deltaTime);
+    this.blockPhysicsSystem.update(deltaTime);
 
     this.skySystem.update(deltaTime);
 
