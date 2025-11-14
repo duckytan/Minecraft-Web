@@ -162,4 +162,25 @@ describe('ChunkManager', () => {
     // 根据生成高度不同，可能没有水
     expect(foundWater).toBeTypeOf('boolean');
   });
+
+  it('should regenerate all meshes', () => {
+    // 生成一些地形
+    chunkManager.generateFlatTerrain(0, 0, 1);
+
+    // 验证有网格存在
+    const meshesBeforeRegenerate = chunkManager.getAllMeshes();
+    expect(meshesBeforeRegenerate.length).toBeGreaterThan(0);
+
+    // 重新生成所有网格
+    chunkManager.regenerateAllMeshes();
+
+    // 验证网格仍然存在
+    const meshesAfterRegenerate = chunkManager.getAllMeshes();
+    expect(meshesAfterRegenerate.length).toBeGreaterThan(0);
+    expect(meshesAfterRegenerate.length).toBe(meshesBeforeRegenerate.length);
+
+    // 验证方块数据没有改变
+    expect(chunkManager.getBlock(0, 0, 0)).toBe(BlockType.BEDROCK);
+    expect(chunkManager.getBlock(0, 3, 0)).toBe(BlockType.GRASS);
+  });
 });
