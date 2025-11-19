@@ -21,6 +21,7 @@ interface GreedyMesherOptions {
   chunkX: number;
   chunkZ: number;
   getBlock: (x: number, y: number, z: number) => BlockType;
+  getNeighborBlock?: (worldX: number, worldY: number, worldZ: number) => BlockType;
 }
 
 /**
@@ -31,6 +32,7 @@ export class GreedyMesher {
   private readonly chunkX: number;
   private readonly chunkZ: number;
   private readonly getBlock: (x: number, y: number, z: number) => BlockType;
+  private readonly getNeighborBlock?: (worldX: number, worldY: number, worldZ: number) => BlockType;
 
   private static readonly dims: [number, number, number] = [CHUNK_SIZE, CHUNK_HEIGHT, CHUNK_SIZE];
 
@@ -38,6 +40,7 @@ export class GreedyMesher {
     this.chunkX = options.chunkX;
     this.chunkZ = options.chunkZ;
     this.getBlock = options.getBlock;
+    this.getNeighborBlock = options.getNeighborBlock;
   }
 
   public generate(): MeshData {
@@ -66,8 +69,8 @@ export class GreedyMesher {
         let n = 0;
         for (x[v] = 0; x[v] < dimensions[v]; ++x[v]) {
           for (x[u] = 0; x[u] < dimensions[u]; ++x[u]) {
-            const a = this.getBlock(x[0], x[1], x[2]);
-            const b = this.getBlock(x[0] + q[0], x[1] + q[1], x[2] + q[2]);
+            const a = this.getBlockAt(x[0], x[1], x[2]);
+            const b = this.getBlockAt(x[0] + q[0], x[1] + q[1], x[2] + q[2]);
             mask[n++] = this.getMaskCell(axis, a, b);
           }
         }
@@ -134,6 +137,20 @@ export class GreedyMesher {
     }
 
     return meshData;
+  }
+
+  private getBlockAt(x: number, y: number, z: number): BlockType {
+    if (x >= 0 && x < CHUNK_SIZE && y >= 0 && y < CHUNK_HEIGHT && z >= 0 && z < CHUNK_SIZE) {
+      return this.getBlock(x, y, z);
+    }
+
+    if (!this.getNeighborBlock || y < 0 || y >= CHUNK_HEIGHT) {
+      return BlockType.AIR;
+    }
+
+    const worldX = this.chunkX * CHUNK_SIZE + x;
+    const worldZ = this.chunkZ * CHUNK_SIZE + z;
+    return this.getNeighborBlock(worldX, y, worldZ);
   }
 
   private getMaskCell(axis: number, a: BlockType, b: BlockType): MaskCell | null {
