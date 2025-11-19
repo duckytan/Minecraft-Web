@@ -420,10 +420,10 @@ class Game {
       return;
     }
 
-    // 定期更新 Chunk
+    // 定期更新 Chunk（带方向优先级）
     this.lastChunkUpdate += deltaTime;
     if (this.lastChunkUpdate >= this.chunkUpdateInterval) {
-      this.chunkManager.updateChunks(this.player.getPosition());
+      this.chunkManager.updateChunks(this.player.getPosition(), this.player.getForwardDirection());
       this.lastChunkUpdate = 0;
     }
 

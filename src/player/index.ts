@@ -430,6 +430,18 @@ export class Player {
     return this.camera.position;
   }
 
+  getForwardDirection(): THREE.Vector3 {
+    const direction = new THREE.Vector3();
+    this.camera.getWorldDirection(direction);
+    direction.y = 0;
+    if (direction.lengthSq() === 0) {
+      direction.set(0, 0, -1);
+    } else {
+      direction.normalize();
+    }
+    return direction;
+  }
+
   isSwimming(): boolean {
     return this.isInWater && !this.isFlying;
   }
