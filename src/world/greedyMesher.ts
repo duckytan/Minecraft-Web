@@ -1,5 +1,5 @@
 import { BlockType, BLOCK_SIZE } from './block';
-import { CHUNK_SIZE, CHUNK_HEIGHT } from './chunk';
+import { CHUNK_SIZE, CHUNK_HEIGHT } from './chunkConstants';
 
 export type FaceType = 'top' | 'bottom' | 'side';
 

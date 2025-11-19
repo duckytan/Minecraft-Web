@@ -1,7 +1,7 @@
 import type { ChunkManager } from '../world/chunkManager';
 import type { Player } from '../player';
 import { BlockType } from '../world/block';
-import { CHUNK_HEIGHT, CHUNK_SIZE } from '../world/chunk';
+import { CHUNK_HEIGHT, CHUNK_SIZE } from '../world/chunkConstants';
 
 interface PlayerSaveData {
   position: {
