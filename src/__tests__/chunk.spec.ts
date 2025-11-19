@@ -2,7 +2,8 @@ import * as THREE from 'three';
 import { describe, expect, it, beforeEach } from 'vitest';
 
 import { BlockType } from '@/world/block';
-import { Chunk, CHUNK_SIZE, CHUNK_HEIGHT } from '@/world/chunk';
+import { Chunk } from '@/world/chunk';
+import { CHUNK_SIZE, CHUNK_HEIGHT } from '@/world/chunkConstants';
 
 describe('Chunk', () => {
   let scene: THREE.Scene;

@@ -2,12 +2,9 @@ import * as THREE from 'three';
 import { BlockType } from './block';
 import { MaterialManager } from './materialManager';
 import { GreedyMesher } from './greedyMesher';
+import { CHUNK_SIZE, CHUNK_HEIGHT } from './chunkConstants';
 
-/**
- * Chunk 尺寸常量
- */
-export const CHUNK_SIZE = 16;
-export const CHUNK_HEIGHT = 64;
+export { CHUNK_SIZE, CHUNK_HEIGHT } from './chunkConstants';
 
 /**
  * Chunk 类 - 管理一个 16x64x16 的方块区域

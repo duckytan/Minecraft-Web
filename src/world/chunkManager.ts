@@ -1,5 +1,6 @@
 import * as THREE from 'three';
-import { Chunk, CHUNK_SIZE, CHUNK_HEIGHT } from './chunk';
+import { Chunk } from './chunk';
+import { CHUNK_SIZE, CHUNK_HEIGHT } from './chunkConstants';
 import { BlockType } from './block';
 import type { TerrainConfig, TerrainData } from './terrainTypes';
 import {

@@ -1,6 +1,6 @@
 import { BlockType } from '../world/block';
 import { ChunkManager, type BlockChange } from '../world/chunkManager';
-import { CHUNK_HEIGHT, CHUNK_SIZE } from '../world/chunk';
+import { CHUNK_HEIGHT, CHUNK_SIZE } from '../world/chunkConstants';
 
 interface BlockTimer {
   x: number;

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
-import { Chunk, CHUNK_HEIGHT, CHUNK_SIZE } from '../world/chunk';
+import { Chunk } from '../world/chunk';
+import { CHUNK_HEIGHT, CHUNK_SIZE } from '../world/chunkConstants';
 
 /**
  * 视锥剔除系统

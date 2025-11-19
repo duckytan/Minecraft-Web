@@ -1,6 +1,6 @@
 import { createNoise2D, createNoise3D } from 'simplex-noise';
 import { BlockType } from './block';
-import { CHUNK_SIZE, CHUNK_HEIGHT } from './chunk';
+import { CHUNK_SIZE, CHUNK_HEIGHT } from './chunkConstants';
 
 /**
  * 创建基于种子的随机数生成器（LCG 算法）

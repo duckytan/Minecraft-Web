@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { CHUNK_SIZE } from './chunk';
+import { CHUNK_SIZE } from './chunkConstants';
 
 /**
  * Chunk 加载队列任务
