@@ -15,12 +15,19 @@ export class Chunk {
   private blocks: Uint8Array; // 使用 Uint8Array 节省内存
   private mesh: THREE.Mesh | null = null;
   private readonly scene: THREE.Scene;
+  private readonly getNeighborBlock?: (worldX: number, worldY: number, worldZ: number) => BlockType;
   private version = 0;
 
-  constructor(chunkX: number, chunkZ: number, scene: THREE.Scene) {
+  constructor(
+    chunkX: number,
+    chunkZ: number,
+    scene: THREE.Scene,
+    getNeighborBlock?: (worldX: number, worldY: number, worldZ: number) => BlockType
+  ) {
     this.chunkX = chunkX;
     this.chunkZ = chunkZ;
     this.scene = scene;
+    this.getNeighborBlock = getNeighborBlock;
     // 初始化方块数据 (16 * 64 * 16 = 16384 个方块)
     this.blocks = new Uint8Array(CHUNK_SIZE * CHUNK_HEIGHT * CHUNK_SIZE);
     this.blocks.fill(BlockType.AIR);
@@ -110,7 +117,8 @@ export class Chunk {
     const mesher = new GreedyMesher({
       chunkX: this.chunkX,
       chunkZ: this.chunkZ,
-      getBlock: (x, y, z) => this.getBlock(x, y, z)
+      getBlock: (x, y, z) => this.getBlock(x, y, z),
+      getNeighborBlock: this.getNeighborBlock
     });
 
     const meshData = mesher.generate();

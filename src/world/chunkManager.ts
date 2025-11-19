@@ -47,7 +47,9 @@ export class ChunkManager {
     let chunk = this.chunks.get(key);
 
     if (!chunk) {
-      chunk = new Chunk(chunkX, chunkZ, this.scene);
+      chunk = new Chunk(chunkX, chunkZ, this.scene, (worldX, worldY, worldZ) =>
+        this.getBlock(worldX, worldY, worldZ)
+      );
       this.chunks.set(key, chunk);
     }
 
@@ -144,6 +146,10 @@ export class ChunkManager {
 
     if (changed) {
       chunk.generateMesh();
+
+      const neighborKeys = new Set<string>();
+      this.collectBoundaryNeighborKeys(coords.chunkX, coords.chunkZ, coords.localX, coords.localZ, neighborKeys);
+      this.regenerateNeighborChunks(neighborKeys);
     }
   }
 
@@ -162,6 +168,43 @@ export class ChunkManager {
   }
 
   /**
+   * 收集边界方块相邻的 Chunk 键
+   */
+  private collectBoundaryNeighborKeys(
+    chunkX: number,
+    chunkZ: number,
+    localX: number,
+    localZ: number,
+    neighborKeys: Set<string>
+  ): void {
+    if (localX === 0) {
+      neighborKeys.add(Chunk.getChunkKey(chunkX - 1, chunkZ));
+    }
+    if (localX === CHUNK_SIZE - 1) {
+      neighborKeys.add(Chunk.getChunkKey(chunkX + 1, chunkZ));
+    }
+    if (localZ === 0) {
+      neighborKeys.add(Chunk.getChunkKey(chunkX, chunkZ - 1));
+    }
+    if (localZ === CHUNK_SIZE - 1) {
+      neighborKeys.add(Chunk.getChunkKey(chunkX, chunkZ + 1));
+    }
+  }
+
+  /**
+   * 重新生成相邻 Chunk 的网格
+   */
+  private regenerateNeighborChunks(neighborKeys: Set<string>): void {
+    for (const key of neighborKeys) {
+      const [nx, nz] = key.split(',').map(Number);
+      const neighborChunk = this.getChunk(nx, nz);
+      if (neighborChunk && neighborChunk.isLoaded()) {
+        neighborChunk.generateMesh();
+      }
+    }
+  }
+
+  /**
    * 批量应用方块变化（用于方块物理系统）
    * 优化性能：按 chunk 分组，每个 chunk 只重新生成一次网格
    */
@@ -171,6 +214,7 @@ export class ChunkManager {
     }
 
     const affectedChunks = new Set<string>();
+    const neighborChunks = new Set<string>();
 
     for (const change of changes) {
       const coords = Chunk.worldToChunkCoords(change.x, change.z);
@@ -182,6 +226,7 @@ export class ChunkManager {
 
       chunk.setBlock(coords.localX, change.y, coords.localZ, change.type);
       affectedChunks.add(chunk.getKey());
+      this.collectBoundaryNeighborKeys(coords.chunkX, coords.chunkZ, coords.localX, coords.localZ, neighborChunks);
     }
 
     for (const chunkKey of affectedChunks) {
@@ -191,6 +236,8 @@ export class ChunkManager {
         chunk.generateMesh();
       }
     }
+
+    this.regenerateNeighborChunks(neighborChunks);
   }
 
   /**
