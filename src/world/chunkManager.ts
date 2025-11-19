@@ -7,6 +7,7 @@ import {
   DEFAULT_TERRAIN_CONFIG,
   type AdvancedTerrainConfig
 } from './advancedTerrain';
+import { ChunkLoadQueue } from './chunkLoadQueue';
 
 export interface BlockChange {
   x: number;
@@ -27,11 +28,14 @@ export class ChunkManager {
   private pendingChunks: Map<string, Array<{ resolve: (data: TerrainData) => void; reject: (error: Error) => void }>> =
     new Map();
   private readonly loadingChunks: Set<string> = new Set();
+  private readonly loadQueue: ChunkLoadQueue;
+  private lastPlayerDirection = new THREE.Vector3(0, 0, -1);
 
   constructor(scene: THREE.Scene, renderDistance: number = 4) {
     this.scene = scene;
     this.renderDistance = renderDistance;
     this.advancedTerrain = new AdvancedTerrainGenerator(DEFAULT_TERRAIN_CONFIG);
+    this.loadQueue = new ChunkLoadQueue(2);
   }
 
   /**
@@ -71,32 +75,45 @@ export class ChunkManager {
   }
 
   /**
-   * 根据玩家位置更新 Chunk
+   * 根据玩家位置更新 Chunk（使用加载队列和优先级）
    */
-  public updateChunks(playerPosition: THREE.Vector3): void {
+  public updateChunks(playerPosition: THREE.Vector3, playerDirection?: THREE.Vector3): void {
+    if (playerDirection) {
+      this.lastPlayerDirection.copy(playerDirection);
+    }
+
     const playerChunkX = Math.floor(playerPosition.x / CHUNK_SIZE);
     const playerChunkZ = Math.floor(playerPosition.z / CHUNK_SIZE);
 
-    // 加载玩家周围的 Chunk
-    const chunksToLoad: { x: number; z: number }[] = [];
+    // 将需要加载的 chunk 添加到队列
     for (let x = -this.renderDistance; x <= this.renderDistance; x++) {
       for (let z = -this.renderDistance; z <= this.renderDistance; z++) {
         const chunkX = playerChunkX + x;
         const chunkZ = playerChunkZ + z;
-        chunksToLoad.push({ x: chunkX, z: chunkZ });
+        const chunk = this.getChunk(chunkX, chunkZ);
+
+        // 只将未加载且未在加载中的 chunk 加入队列
+        if (!chunk || !chunk.isLoaded()) {
+          const key = Chunk.getChunkKey(chunkX, chunkZ);
+          if (!this.loadingChunks.has(key)) {
+            this.loadQueue.enqueue(chunkX, chunkZ, playerPosition, this.lastPlayerDirection);
+          }
+        }
       }
     }
 
-    // 加载新 Chunk（异步生成地形）
-    for (const { x, z } of chunksToLoad) {
-      const chunk = this.getOrCreateChunk(x, z);
-      const key = chunk.getKey();
-
-      if (!chunk.isLoaded() && !this.loadingChunks.has(key)) {
-        this.loadChunkTerrain(x, z).catch((error) => {
-          console.error(`Failed to load chunk (${x}, ${z})`, error);
+    // 每帧加载一批 chunk（限流）
+    const batch = this.loadQueue.getNextBatch();
+    for (const task of batch) {
+      this.getOrCreateChunk(task.chunkX, task.chunkZ);
+      this.loadChunkTerrain(task.chunkX, task.chunkZ)
+        .then(() => {
+          this.loadQueue.markLoaded(task.chunkX, task.chunkZ);
+        })
+        .catch((error) => {
+          console.error(`Failed to load chunk (${task.chunkX}, ${task.chunkZ})`, error);
+          this.loadQueue.markLoaded(task.chunkX, task.chunkZ);
         });
-      }
     }
 
     // 卸载远离的 Chunk
@@ -425,6 +442,7 @@ export class ChunkManager {
       chunk.unload();
     }
     this.chunks.clear();
+    this.loadQueue.clear();
   }
 
   /**

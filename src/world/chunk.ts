@@ -1,6 +1,7 @@
 import * as THREE from 'three';
-import { BlockType, BLOCK_SIZE } from './block';
+import { BlockType } from './block';
 import { MaterialManager } from './materialManager';
+import { GreedyMesher } from './greedyMesher';
 
 /**
  * Chunk 尺寸常量
@@ -106,68 +107,44 @@ export class Chunk {
       } else {
         this.mesh.material.dispose();
       }
+      this.mesh = null;
     }
 
-    const geometry = new THREE.BufferGeometry();
-    const positions: number[] = [];
-    const normals: number[] = [];
-    const uvs: number[] = [];
-    const indices: number[] = [];
-    const groups: Array<{ start: number; count: number; materialIndex: number }> = [];
-    const materials: THREE.MeshLambertMaterial[] = [];
-    const materialMap = new Map<string, number>();
-    const materialManager = MaterialManager.getInstance();
+    const mesher = new GreedyMesher({
+      chunkX: this.chunkX,
+      chunkZ: this.chunkZ,
+      getBlock: (x, y, z) => this.getBlock(x, y, z)
+    });
 
-    // 世界坐标偏移
-    const worldOffsetX = this.chunkX * CHUNK_SIZE;
-    const worldOffsetZ = this.chunkZ * CHUNK_SIZE;
+    const meshData = mesher.generate();
 
-    // 遍历所有方块
-    for (let x = 0; x < CHUNK_SIZE; x++) {
-      for (let y = 0; y < CHUNK_HEIGHT; y++) {
-        for (let z = 0; z < CHUNK_SIZE; z++) {
-          const blockType = this.getBlock(x, y, z);
-          if (blockType === BlockType.AIR) continue;
-
-          const worldX = worldOffsetX + x;
-          const worldZ = worldOffsetZ + z;
-
-          // 检查六个面是否需要渲染（简单面剔除）
-          this.addBlockFaces(
-            x,
-            y,
-            z,
-            worldX,
-            worldZ,
-            blockType,
-            positions,
-            normals,
-            uvs,
-            indices,
-            groups,
-            materials,
-            materialMap,
-            materialManager
-          );
-        }
-      }
-    }
-
-    // 如果没有可见方块，不创建网格
-    if (positions.length === 0) {
+    // 如果没有可见方块，直接返回
+    if (meshData.positions.length === 0) {
       return;
     }
 
-    // 设置几何体属性
-    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-    geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
-    geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
-    geometry.setIndex(indices);
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(meshData.positions, 3));
+    geometry.setAttribute('normal', new THREE.Float32BufferAttribute(meshData.normals, 3));
+    geometry.setAttribute('uv', new THREE.Float32BufferAttribute(meshData.uvs, 2));
+    geometry.setIndex(meshData.indices);
     geometry.computeBoundingBox();
 
-    // 添加材质分组
-    for (const group of groups) {
-      geometry.addGroup(group.start, group.count, group.materialIndex);
+    const materialManager = MaterialManager.getInstance();
+    const materials: THREE.MeshLambertMaterial[] = [];
+    const materialMap = new Map<string, number>();
+
+    for (const quad of meshData.quads) {
+      const materialKey = `${quad.blockType}_${quad.faceType}`;
+      let materialIndex = materialMap.get(materialKey);
+      if (materialIndex === undefined) {
+        const material = materialManager.getMaterial(quad.blockType, quad.faceType);
+        materialIndex = materials.length;
+        materials.push(material);
+        materialMap.set(materialKey, materialIndex);
+      }
+
+      geometry.addGroup(quad.start, quad.count, materialIndex);
     }
 
     this.mesh = new THREE.Mesh(geometry, materials);
@@ -177,8 +154,9 @@ export class Chunk {
   }
 
   /**
-   * 为方块添加可见面（带纹理）
+   * 为方块添加可见面（带纹理）- 已废弃，使用贪婪网格合并代替
    */
+  /*
   private addBlockFaces(
     x: number,
     y: number,
@@ -329,6 +307,7 @@ export class Chunk {
       });
     }
   }
+  */
 
   /**
    * 卸载 Chunk（从场景移除网格）
