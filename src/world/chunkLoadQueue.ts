@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { CHUNK_SIZE } from './chunkConstants';
+import { MAX_CHUNKS_LOAD_PER_FRAME } from '../core/constants';
 
 /**
  * Chunk 加载队列任务
@@ -19,7 +20,7 @@ export class ChunkLoadQueue {
   private loading = new Set<string>();
   private readonly maxLoadsPerFrame: number;
 
-  constructor(maxLoadsPerFrame: number = 2) {
+  constructor(maxLoadsPerFrame: number = MAX_CHUNKS_LOAD_PER_FRAME) {
     this.maxLoadsPerFrame = maxLoadsPerFrame;
   }
 

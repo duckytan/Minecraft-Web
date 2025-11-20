@@ -1,6 +1,16 @@
 import { BlockType } from '../world/block';
 import { ChunkManager, type BlockChange } from '../world/chunkManager';
 import { CHUNK_HEIGHT, CHUNK_SIZE } from '../world/chunkConstants';
+import {
+  BLOCK_PHYSICS_UPDATE_INTERVAL,
+  MAX_NEW_TIMERS_PER_STEP,
+  MAX_SAND_UPDATES_PER_STEP,
+  MAX_WATER_UPDATES_PER_STEP,
+  SAND_CHUNK_SAMPLE_COUNT,
+  SNOW_CHUNK_SAMPLE_COUNT,
+  SOIL_CHUNK_SAMPLE_COUNT,
+  WATER_CHUNK_SAMPLE_COUNT
+} from '../core/constants';
 
 interface BlockTimer {
   x: number;
@@ -33,16 +43,16 @@ export class BlockPhysicsSystem {
   private readonly chunkManager: ChunkManager;
   private enabled = true;
   private accumulator = 0;
-  private readonly updateInterval = 1.0; // 每 1 秒进行一次物理更新（降低频率以提升性能）
+  private readonly updateInterval = BLOCK_PHYSICS_UPDATE_INTERVAL;
 
-  private readonly waterChunkSample = 3;
-  private readonly sandChunkSample = 3;
-  private readonly soilChunkSample = 2;
-  private readonly snowChunkSample = 2;
+  private readonly waterChunkSample = WATER_CHUNK_SAMPLE_COUNT;
+  private readonly sandChunkSample = SAND_CHUNK_SAMPLE_COUNT;
+  private readonly soilChunkSample = SOIL_CHUNK_SAMPLE_COUNT;
+  private readonly snowChunkSample = SNOW_CHUNK_SAMPLE_COUNT;
 
-  private readonly maxWaterUpdatesPerStep = 25;
-  private readonly maxSandUpdatesPerStep = 25;
-  private readonly maxNewTimersPerStep = 30;
+  private readonly maxWaterUpdatesPerStep = MAX_WATER_UPDATES_PER_STEP;
+  private readonly maxSandUpdatesPerStep = MAX_SAND_UPDATES_PER_STEP;
+  private readonly maxNewTimersPerStep = MAX_NEW_TIMERS_PER_STEP;
 
   private readonly dirtTimers = new Map<string, BlockTimer>();
   private readonly grassTimers = new Map<string, BlockTimer>();

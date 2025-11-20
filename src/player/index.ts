@@ -57,6 +57,17 @@ export class Player {
 
   private chunkManager: ChunkManager | null = null;
 
+  // 缓存对象，避免重复创建
+  private readonly tempVector1 = new THREE.Vector3();
+  private readonly tempVector2 = new THREE.Vector3();
+  private readonly tempVector3 = new THREE.Vector3();
+  private readonly cachedForward = new THREE.Vector3();
+  private readonly cachedRight = new THREE.Vector3();
+  private readonly cachedUp = new THREE.Vector3(0, 1, 0);
+  private readonly cachedBoundingBox = new BoundingBox(new THREE.Vector3(), new THREE.Vector3());
+  private readonly cachedBlockBox = new BoundingBox(new THREE.Vector3(), new THREE.Vector3());
+  private readonly cachedOldPosition = new THREE.Vector3();
+
   constructor(camera: THREE.PerspectiveCamera, keyboard: KeyboardInput, config?: PlayerConfig) {
     this.camera = camera;
     this.keyboard = keyboard;
@@ -76,10 +87,9 @@ export class Player {
     const halfWidth = this.config.width / 2;
     const halfDepth = this.config.depth / 2;
 
-    return new BoundingBox(
-      new THREE.Vector3(pos.x - halfWidth, pos.y - this.config.height, pos.z - halfDepth),
-      new THREE.Vector3(pos.x + halfWidth, pos.y, pos.z + halfDepth)
-    );
+    this.cachedBoundingBox.min.set(pos.x - halfWidth, pos.y - this.config.height, pos.z - halfDepth);
+    this.cachedBoundingBox.max.set(pos.x + halfWidth, pos.y, pos.z + halfDepth);
+    return this.cachedBoundingBox;
   }
 
   update(deltaTime: number): void {
@@ -132,44 +142,46 @@ export class Player {
   private updateSwimming(deltaTime: number): void {
     const swimSpeed = this.config.moveSpeed * 0.7 * deltaTime; // 水中移动速度较慢
 
-    const forward = new THREE.Vector3();
-    const right = new THREE.Vector3();
+    // 使用缓存对象
+    this.camera.getWorldDirection(this.cachedForward);
+    this.cachedForward.y = 0;
+    if (this.cachedForward.lengthSq() === 0) {
+      this.cachedForward.set(0, 0, -1);
+    } else {
+      this.cachedForward.normalize();
+    }
+    this.cachedRight.crossVectors(this.cachedForward, this.cachedUp).normalize();
 
-    this.camera.getWorldDirection(forward);
-    forward.y = 0;
-    forward.normalize();
-    right.crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
-
-    const moveDirection = new THREE.Vector3();
+    this.tempVector1.set(0, 0, 0);
 
     if (this.keyboard.isForward()) {
-      moveDirection.add(forward);
+      this.tempVector1.add(this.cachedForward);
     }
 
     if (this.keyboard.isBackward()) {
-      moveDirection.sub(forward);
+      this.tempVector1.sub(this.cachedForward);
     }
 
     if (this.keyboard.isLeft()) {
-      moveDirection.sub(right);
+      this.tempVector1.sub(this.cachedRight);
     }
 
     if (this.keyboard.isRight()) {
-      moveDirection.add(right);
+      this.tempVector1.add(this.cachedRight);
     }
 
-    if (moveDirection.length() > 0) {
-      moveDirection.normalize();
-      moveDirection.multiplyScalar(swimSpeed);
+    if (this.tempVector1.length() > 0) {
+      this.tempVector1.normalize();
+      this.tempVector1.multiplyScalar(swimSpeed);
 
-      const horizontalMovement = new THREE.Vector3(moveDirection.x, 0, moveDirection.z);
-
-      if (horizontalMovement.x !== 0) {
-        this.applyMovement(new THREE.Vector3(horizontalMovement.x, 0, 0), 'x');
+      if (this.tempVector1.x !== 0) {
+        this.tempVector2.set(this.tempVector1.x, 0, 0);
+        this.applyMovement(this.tempVector2, 'x');
       }
 
-      if (horizontalMovement.z !== 0) {
-        this.applyMovement(new THREE.Vector3(0, 0, horizontalMovement.z), 'z');
+      if (this.tempVector1.z !== 0) {
+        this.tempVector2.set(0, 0, this.tempVector1.z);
+        this.applyMovement(this.tempVector2, 'z');
       }
     }
 
@@ -188,8 +200,8 @@ export class Player {
 
     // 应用垂直移动（带阻力）
     this.velocity.y *= 0.95; // 水中阻力
-    const verticalMovement = new THREE.Vector3(0, this.velocity.y * deltaTime, 0);
-    this.applyMovement(verticalMovement, 'y');
+    this.tempVector2.set(0, this.velocity.y * deltaTime, 0);
+    this.applyMovement(this.tempVector2, 'y');
   }
 
   /**
@@ -201,44 +213,46 @@ export class Player {
       (this.keyboard.isSprint() ? this.config.sprintMultiplier : 1) *
       deltaTime;
 
-    const forward = new THREE.Vector3();
-    const right = new THREE.Vector3();
+    // 使用缓存对象
+    this.camera.getWorldDirection(this.cachedForward);
+    this.cachedForward.y = 0;
+    if (this.cachedForward.lengthSq() === 0) {
+      this.cachedForward.set(0, 0, -1);
+    } else {
+      this.cachedForward.normalize();
+    }
+    this.cachedRight.crossVectors(this.cachedForward, this.cachedUp).normalize();
 
-    this.camera.getWorldDirection(forward);
-    forward.y = 0;
-    forward.normalize();
-    right.crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
-
-    const moveDirection = new THREE.Vector3();
+    this.tempVector1.set(0, 0, 0);
 
     if (this.keyboard.isForward()) {
-      moveDirection.add(forward);
+      this.tempVector1.add(this.cachedForward);
     }
 
     if (this.keyboard.isBackward()) {
-      moveDirection.sub(forward);
+      this.tempVector1.sub(this.cachedForward);
     }
 
     if (this.keyboard.isLeft()) {
-      moveDirection.sub(right);
+      this.tempVector1.sub(this.cachedRight);
     }
 
     if (this.keyboard.isRight()) {
-      moveDirection.add(right);
+      this.tempVector1.add(this.cachedRight);
     }
 
-    if (moveDirection.length() > 0) {
-      moveDirection.normalize();
-      moveDirection.multiplyScalar(moveSpeed);
+    if (this.tempVector1.length() > 0) {
+      this.tempVector1.normalize();
+      this.tempVector1.multiplyScalar(moveSpeed);
 
-      const horizontalMovement = new THREE.Vector3(moveDirection.x, 0, moveDirection.z);
-
-      if (horizontalMovement.x !== 0) {
-        this.applyMovement(new THREE.Vector3(horizontalMovement.x, 0, 0), 'x');
+      if (this.tempVector1.x !== 0) {
+        this.tempVector2.set(this.tempVector1.x, 0, 0);
+        this.applyMovement(this.tempVector2, 'x');
       }
 
-      if (horizontalMovement.z !== 0) {
-        this.applyMovement(new THREE.Vector3(0, 0, horizontalMovement.z), 'z');
+      if (this.tempVector1.z !== 0) {
+        this.tempVector2.set(0, 0, this.tempVector1.z);
+        this.applyMovement(this.tempVector2, 'z');
       }
     }
 
@@ -249,46 +263,45 @@ export class Player {
 
     this.velocity.y += this.config.gravity * deltaTime;
 
-    const verticalMovement = new THREE.Vector3(0, this.velocity.y * deltaTime, 0);
-    this.applyMovement(verticalMovement, 'y');
+    this.tempVector2.set(0, this.velocity.y * deltaTime, 0);
+    this.applyMovement(this.tempVector2, 'y');
   }
 
   /**
    * 飞行模式更新（带加速度）
    */
   private updateFlying(deltaTime: number): void {
-    const forward = new THREE.Vector3();
-    const right = new THREE.Vector3();
-
-    this.camera.getWorldDirection(forward);
-    forward.y = 0;
-    if (forward.lengthSq() === 0) {
-      forward.set(0, 0, -1);
+    // 使用缓存对象
+    this.camera.getWorldDirection(this.cachedForward);
+    this.cachedForward.y = 0;
+    if (this.cachedForward.lengthSq() === 0) {
+      this.cachedForward.set(0, 0, -1);
+    } else {
+      this.cachedForward.normalize();
     }
-    forward.normalize();
-    right.crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
+    this.cachedRight.crossVectors(this.cachedForward, this.cachedUp).normalize();
 
-    const horizontalDirection = new THREE.Vector3();
+    this.tempVector1.set(0, 0, 0);
 
     if (this.keyboard.isForward()) {
-      horizontalDirection.add(forward);
+      this.tempVector1.add(this.cachedForward);
     }
 
     if (this.keyboard.isBackward()) {
-      horizontalDirection.sub(forward);
+      this.tempVector1.sub(this.cachedForward);
     }
 
     if (this.keyboard.isLeft()) {
-      horizontalDirection.sub(right);
+      this.tempVector1.sub(this.cachedRight);
     }
 
     if (this.keyboard.isRight()) {
-      horizontalDirection.add(right);
+      this.tempVector1.add(this.cachedRight);
     }
 
-    const hasHorizontalInput = horizontalDirection.lengthSq() > 0;
+    const hasHorizontalInput = this.tempVector1.lengthSq() > 0;
     if (hasHorizontalInput) {
-      horizontalDirection.normalize();
+      this.tempVector1.normalize();
     }
 
     const verticalInput = (this.keyboard.isJump() ? 1 : 0) - (this.keyboard.isDescend() ? 1 : 0);
@@ -303,16 +316,16 @@ export class Player {
         this.flightThrust
       );
 
-      const desiredVelocity = new THREE.Vector3();
+      this.tempVector2.set(0, 0, 0);
 
       if (hasHorizontalInput) {
-        desiredVelocity.addScaledVector(horizontalDirection, targetSpeed);
+        this.tempVector2.addScaledVector(this.tempVector1, targetSpeed);
       }
 
-      desiredVelocity.y = verticalInput * this.config.flightVerticalSpeed;
+      this.tempVector2.y = verticalInput * this.config.flightVerticalSpeed;
 
       const lerpFactor = Math.min(1, this.config.flightAcceleration * deltaTime);
-      this.flightVelocity.lerp(desiredVelocity, lerpFactor);
+      this.flightVelocity.lerp(this.tempVector2, lerpFactor);
     } else {
       this.flightThrust = Math.max(0, this.flightThrust - this.config.flightDeceleration * deltaTime);
       const damping = Math.max(0, 1 - this.config.flightDeceleration * deltaTime);
@@ -322,18 +335,21 @@ export class Player {
       }
     }
 
-    const movement = this.flightVelocity.clone().multiplyScalar(deltaTime);
+    this.tempVector3.copy(this.flightVelocity).multiplyScalar(deltaTime);
 
-    if (movement.x !== 0) {
-      this.applyMovement(new THREE.Vector3(movement.x, 0, 0), 'x');
+    if (this.tempVector3.x !== 0) {
+      this.tempVector2.set(this.tempVector3.x, 0, 0);
+      this.applyMovement(this.tempVector2, 'x');
     }
 
-    if (movement.y !== 0) {
-      this.applyMovement(new THREE.Vector3(0, movement.y, 0), 'y');
+    if (this.tempVector3.y !== 0) {
+      this.tempVector2.set(0, this.tempVector3.y, 0);
+      this.applyMovement(this.tempVector2, 'y');
     }
 
-    if (movement.z !== 0) {
-      this.applyMovement(new THREE.Vector3(0, 0, movement.z), 'z');
+    if (this.tempVector3.z !== 0) {
+      this.tempVector2.set(0, 0, this.tempVector3.z);
+      this.applyMovement(this.tempVector2, 'z');
     }
   }
 
@@ -379,33 +395,37 @@ export class Player {
       return;
     }
 
-    const oldPosition = this.camera.position.clone();
+    this.cachedOldPosition.copy(this.camera.position);
     this.camera.position.add(movement);
 
-    const playerBox = this.getBoundingBox();
+    // 使用缓存的 BoundingBox，更新其值
+    const pos = this.camera.position;
+    const halfWidth = this.config.width / 2;
+    const halfDepth = this.config.depth / 2;
+    this.cachedBoundingBox.min.set(pos.x - halfWidth, pos.y - this.config.height, pos.z - halfDepth);
+    this.cachedBoundingBox.max.set(pos.x + halfWidth, pos.y, pos.z + halfDepth);
 
     // 检查玩家周围的方块
-    const minX = Math.floor(playerBox.min.x);
-    const maxX = Math.ceil(playerBox.max.x);
-    const minY = Math.floor(playerBox.min.y);
-    const maxY = Math.ceil(playerBox.max.y);
-    const minZ = Math.floor(playerBox.min.z);
-    const maxZ = Math.ceil(playerBox.max.z);
+    const minX = Math.floor(this.cachedBoundingBox.min.x);
+    const maxX = Math.ceil(this.cachedBoundingBox.max.x);
+    const minY = Math.floor(this.cachedBoundingBox.min.y);
+    const maxY = Math.ceil(this.cachedBoundingBox.max.y);
+    const minZ = Math.floor(this.cachedBoundingBox.min.z);
+    const maxZ = Math.ceil(this.cachedBoundingBox.max.z);
 
     for (let x = minX; x <= maxX; x++) {
       for (let y = minY; y <= maxY; y++) {
         for (let z = minZ; z <= maxZ; z++) {
           const blockType = this.chunkManager.getBlock(x, y, z);
           if (blockType !== BlockType.AIR && blockType !== BlockType.WATER) {
-            const blockBox = new BoundingBox(
-              new THREE.Vector3(x - 0.5, y - 0.5, z - 0.5),
-              new THREE.Vector3(x + 0.5, y + 0.5, z + 0.5)
-            );
+            // 使用缓存的 blockBox
+            this.cachedBlockBox.min.set(x - 0.5, y - 0.5, z - 0.5);
+            this.cachedBlockBox.max.set(x + 0.5, y + 0.5, z + 0.5);
 
-            const collision = checkCollision(playerBox, blockBox);
+            const collision = checkCollision(this.cachedBoundingBox, this.cachedBlockBox);
 
             if (collision.collided) {
-              this.camera.position.copy(oldPosition);
+              this.camera.position.copy(this.cachedOldPosition);
 
               if (axis === 'y') {
                 if (this.velocity.y < 0) {
@@ -431,15 +451,14 @@ export class Player {
   }
 
   getForwardDirection(): THREE.Vector3 {
-    const direction = new THREE.Vector3();
-    this.camera.getWorldDirection(direction);
-    direction.y = 0;
-    if (direction.lengthSq() === 0) {
-      direction.set(0, 0, -1);
+    this.camera.getWorldDirection(this.cachedForward);
+    this.cachedForward.y = 0;
+    if (this.cachedForward.lengthSq() === 0) {
+      this.cachedForward.set(0, 0, -1);
     } else {
-      direction.normalize();
+      this.cachedForward.normalize();
     }
-    return direction;
+    return this.cachedForward;
   }
 
   isSwimming(): boolean {

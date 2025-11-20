@@ -102,15 +102,11 @@ export class Chunk {
    * 生成 Chunk 的网格（使用程序化纹理）
    */
   public generateMesh(): void {
-    // 如果已有网格，先移除
+    // 如果已有网格，先移除（但不销毁材质，因为材质由 MaterialManager 统一管理）
     if (this.mesh) {
       this.scene.remove(this.mesh);
       this.mesh.geometry.dispose();
-      if (Array.isArray(this.mesh.material)) {
-        this.mesh.material.forEach((m) => m.dispose());
-      } else {
-        this.mesh.material.dispose();
-      }
+      // 不再销毁材质，因为材质是共享的
       this.mesh = null;
     }
 
@@ -321,11 +317,7 @@ export class Chunk {
     if (this.mesh) {
       this.scene.remove(this.mesh);
       this.mesh.geometry.dispose();
-      if (Array.isArray(this.mesh.material)) {
-        this.mesh.material.forEach((m) => m.dispose());
-      } else {
-        this.mesh.material.dispose();
-      }
+      // 材质由 MaterialManager 统一管理，不在此处销毁
       this.mesh = null;
     }
   }

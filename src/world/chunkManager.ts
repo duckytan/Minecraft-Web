@@ -9,6 +9,7 @@ import {
   type AdvancedTerrainConfig
 } from './advancedTerrain';
 import { ChunkLoadQueue } from './chunkLoadQueue';
+import { DEFAULT_RENDER_DISTANCE_PC, MAX_CHUNKS_LOAD_PER_FRAME } from '../core/constants';
 
 export interface BlockChange {
   x: number;
@@ -32,11 +33,11 @@ export class ChunkManager {
   private readonly loadQueue: ChunkLoadQueue;
   private lastPlayerDirection = new THREE.Vector3(0, 0, -1);
 
-  constructor(scene: THREE.Scene, renderDistance: number = 4) {
+  constructor(scene: THREE.Scene, renderDistance: number = DEFAULT_RENDER_DISTANCE_PC) {
     this.scene = scene;
     this.renderDistance = renderDistance;
     this.advancedTerrain = new AdvancedTerrainGenerator(DEFAULT_TERRAIN_CONFIG);
-    this.loadQueue = new ChunkLoadQueue(2);
+    this.loadQueue = new ChunkLoadQueue(MAX_CHUNKS_LOAD_PER_FRAME);
   }
 
   /**
