@@ -33,7 +33,11 @@ export class MaterialManager {
         const material = new THREE.MeshLambertMaterial({
           map: texture,
           transparent: true,
-          opacity: this.getOpacity(blockType)
+          opacity: this.getOpacity(blockType),
+          side: THREE.FrontSide,
+          depthTest: true,
+          depthWrite: false,
+          alphaTest: 0.1
         });
         this.transparentMaterials.set(materialKey, material);
       }
@@ -44,11 +48,14 @@ export class MaterialManager {
     if (!this.materials.has(materialKey)) {
       const texture = BlockTextureGenerator.getTexture(blockType, faceType);
       const material = new THREE.MeshLambertMaterial({
-        map: texture
+        map: texture,
+        side: THREE.FrontSide,
+        depthTest: true,
+        depthWrite: true
       });
       this.materials.set(materialKey, material);
     }
-    return this.materials.get(materialKey)!;
+    return this.materials.get(materialKey)!
   }
 
   /**

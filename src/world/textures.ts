@@ -375,7 +375,8 @@ export class BlockTextureGenerator {
   }
 
   private static generateGlassTexture(ctx: CanvasRenderingContext2D): void {
-    ctx.fillStyle = 'rgba(191, 231, 245, 0.55)';
+    // 使用不透明的浅蓝色作为基础，透明度由材质的 opacity 控制
+    ctx.fillStyle = '#bfe7f5';
     ctx.fillRect(0, 0, TEXTURE_SIZE, TEXTURE_SIZE);
 
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';

@@ -178,11 +178,26 @@ export class GreedyMesher {
       return false;
     }
 
+    // 透明方块（水、玻璃、树叶）的特殊处理
     if (block === BlockType.WATER) {
       return neighbor !== BlockType.WATER;
     }
 
-    return neighbor === BlockType.AIR || neighbor === BlockType.WATER;
+    if (block === BlockType.GLASS) {
+      return neighbor !== BlockType.GLASS;
+    }
+
+    if (block === BlockType.LEAVES) {
+      return neighbor !== BlockType.LEAVES;
+    }
+
+    // 不透明方块只在相邻是空气或透明方块时渲染面
+    return (
+      neighbor === BlockType.AIR ||
+      neighbor === BlockType.WATER ||
+      neighbor === BlockType.GLASS ||
+      neighbor === BlockType.LEAVES
+    );
   }
 
   private canMerge(a: MaskCell, b: MaskCell): boolean {
