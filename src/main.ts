@@ -23,6 +23,13 @@ import { BlockPhysicsSystem } from './physics/blockPhysics';
 import { FrustumCulling } from './core/frustumCulling';
 import { PerformanceMonitor } from './ui/performanceMonitor';
 import { MaterialManager } from './world/materialManager';
+import {
+  CHUNK_UPDATE_INTERVAL,
+  FRUSTUM_CULLING_INTERVAL,
+  PERFORMANCE_MONITOR_UPDATE_FRAMES,
+  SKY_CLOUD_COUNT,
+  SKY_CLOUD_SPEED
+} from './core/constants';
 
 class Game {
   private readonly scene: THREE.Scene;
@@ -71,15 +78,19 @@ class Game {
 
   private lastChunkUpdate = 0;
 
-  private readonly chunkUpdateInterval = 0.5;
+  private readonly chunkUpdateInterval = CHUNK_UPDATE_INTERVAL;
 
   private lastCullingUpdate = 0;
 
-  private readonly cullingInterval = 0.2;
+  private readonly cullingInterval = FRUSTUM_CULLING_INTERVAL;
 
   private visibleChunkCount = 0;
 
   private isContextLost = false;
+
+  // 性能优化：缓存计数器
+  private frameCount = 0;
+  private readonly performanceUpdateInterval = PERFORMANCE_MONITOR_UPDATE_FRAMES;
 
   constructor() {
     this.scene = createScene();
@@ -186,8 +197,8 @@ class Game {
     this.skySystem = new SkySystem(this.scene, {
       enableSun: true,
       enableClouds: true,
-      cloudCount: 6,
-      cloudSpeed: 0.3
+      cloudCount: SKY_CLOUD_COUNT,
+      cloudSpeed: SKY_CLOUD_SPEED
     });
 
     this.frustumCulling = new FrustumCulling();
@@ -446,13 +457,15 @@ class Game {
 
     this.renderer.render(this.scene, this.camera);
 
-    this.performanceMonitor.update({
-      chunkCount: this.chunkManager.getLoadedChunkCount(),
-      visibleChunks: this.visibleChunkCount,
-      materialCount: MaterialManager.getInstance().getMaterialCount(),
-      triangles: this.renderer.info.render.triangles,
-      fps: deltaTime > 0 ? 1 / deltaTime : 0
-    });
+    if (this.frameCount++ % this.performanceUpdateInterval === 0) {
+      this.performanceMonitor.update({
+        chunkCount: this.chunkManager.getLoadedChunkCount(),
+        visibleChunks: this.visibleChunkCount,
+        materialCount: MaterialManager.getInstance().getMaterialCount(),
+        triangles: this.renderer.info.render.triangles,
+        fps: deltaTime > 0 ? 1 / deltaTime : 0
+      });
+    }
 
     this.hud.stats.end();
   };
