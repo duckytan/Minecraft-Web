@@ -154,7 +154,7 @@ class Game {
       this.renderer.domElement.focus();
     });
 
-    this.player = new Player(this.camera, this.keyboard);
+    this.player = new Player(this.camera, this.keyboard, undefined, this.soundManager);
 
     // 监听飞行模式变化，更新 HUD
     this.keyboard.onFlightToggle(() => {

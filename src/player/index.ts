@@ -3,6 +3,8 @@ import { KeyboardInput } from '../input/keyboard';
 import { BoundingBox, checkCollision } from '../physics/collision';
 import { ChunkManager } from '../world/chunkManager';
 import { BlockType } from '../world/block';
+import type { SoundManager } from '../audio/soundManager';
+import { SoundType } from '../audio/soundManager';
 
 export interface PlayerConfig {
   moveSpeed?: number;
@@ -57,6 +59,10 @@ export class Player {
 
   private chunkManager: ChunkManager | null = null;
 
+  private readonly soundManager: SoundManager | null;
+
+  private footstepCooldown = 0;
+
   // 缓存对象，避免重复创建
   private readonly tempVector1 = new THREE.Vector3();
   private readonly tempVector2 = new THREE.Vector3();
@@ -68,10 +74,16 @@ export class Player {
   private readonly cachedBlockBox = new BoundingBox(new THREE.Vector3(), new THREE.Vector3());
   private readonly cachedOldPosition = new THREE.Vector3();
 
-  constructor(camera: THREE.PerspectiveCamera, keyboard: KeyboardInput, config?: PlayerConfig) {
+  constructor(
+    camera: THREE.PerspectiveCamera,
+    keyboard: KeyboardInput,
+    config?: PlayerConfig,
+    soundManager?: SoundManager
+  ) {
     this.camera = camera;
     this.keyboard = keyboard;
     this.config = { ...DEFAULT_CONFIG, ...config };
+    this.soundManager = soundManager ?? null;
 
     this.keyboard.onFlightToggle(() => {
       this.toggleFlightMode();
@@ -98,13 +110,78 @@ export class Player {
       return;
     }
 
+    const previouslyInWater = this.isInWater;
     this.isInWater = this.checkWaterState();
+    this.handleWaterTransition(previouslyInWater);
 
     if (this.isInWater) {
       this.updateSwimming(deltaTime);
     } else {
       this.updateWalking(deltaTime);
     }
+  }
+
+  /**
+   * 处理进出水的音效
+   */
+  private handleWaterTransition(previouslyInWater: boolean): void {
+    if (!this.soundManager) {
+      return;
+    }
+
+    if (this.isInWater && !previouslyInWater) {
+      this.soundManager.play(SoundType.WATER, { volume: 0.4, playbackRate: 0.9 + Math.random() * 0.2 });
+    } else if (!this.isInWater && previouslyInWater) {
+      this.soundManager.play(SoundType.WATER, { volume: 0.35, playbackRate: 1.1 + Math.random() * 0.2 });
+    }
+  }
+
+  /**
+   * 播放脚步声（限制播放频率）
+   */
+  private playFootstep(deltaTime: number, interval = 0.4, volume = 0.3): void {
+    if (!this.soundManager) return;
+
+    this.footstepCooldown -= deltaTime;
+
+    if (this.footstepCooldown <= 0) {
+      this.soundManager.play(SoundType.FOOTSTEP, {
+        volume,
+        playbackRate: 0.95 + Math.random() * 0.1
+      });
+      this.footstepCooldown = interval;
+    }
+  }
+
+  /**
+   * 处理行走/游泳时的脚步声
+   */
+  private handleFootstepSound(
+    isMoving: boolean,
+    deltaTime: number,
+    intervalOverride?: number,
+    volumeOverride?: number
+  ): void {
+    if (isMoving) {
+      const isSprinting = this.keyboard.isSprint();
+      const interval = intervalOverride ?? (isSprinting ? 0.28 : 0.4);
+      const volume = volumeOverride ?? (intervalOverride ? 0.35 : isSprinting ? 0.6 : 0.45);
+      this.playFootstep(deltaTime, interval, volume);
+    } else {
+      this.footstepCooldown = 0;
+    }
+  }
+
+  /**
+   * 播放跳跃音效
+   */
+  private playJumpSound(): void {
+    if (!this.soundManager) return;
+
+    this.soundManager.play(SoundType.JUMP, {
+      volume: 0.35,
+      playbackRate: 0.95 + Math.random() * 0.1
+    });
   }
 
   /**
@@ -153,21 +230,26 @@ export class Player {
     this.cachedRight.crossVectors(this.cachedForward, this.cachedUp).normalize();
 
     this.tempVector1.set(0, 0, 0);
+    let isMoving = false;
 
     if (this.keyboard.isForward()) {
       this.tempVector1.add(this.cachedForward);
+      isMoving = true;
     }
 
     if (this.keyboard.isBackward()) {
       this.tempVector1.sub(this.cachedForward);
+      isMoving = true;
     }
 
     if (this.keyboard.isLeft()) {
       this.tempVector1.sub(this.cachedRight);
+      isMoving = true;
     }
 
     if (this.keyboard.isRight()) {
       this.tempVector1.add(this.cachedRight);
+      isMoving = true;
     }
 
     if (this.tempVector1.length() > 0) {
@@ -190,9 +272,11 @@ export class Player {
     if (this.keyboard.isJump()) {
       // 向上游
       this.velocity.y = verticalSpeed;
+      isMoving = true;
     } else if (this.keyboard.isDescend()) {
       // 向下游
       this.velocity.y = -verticalSpeed;
+      isMoving = true;
     } else {
       // 浮力效果（缓慢上升）
       this.velocity.y = Math.min(1, this.velocity.y + 0.5 * deltaTime);
@@ -202,6 +286,9 @@ export class Player {
     this.velocity.y *= 0.95; // 水中阻力
     this.tempVector2.set(0, this.velocity.y * deltaTime, 0);
     this.applyMovement(this.tempVector2, 'y');
+
+    // 游泳时播放脚步声（频率较低，音量较小）
+    this.handleFootstepSound(isMoving, deltaTime, 0.6, 0.2);
   }
 
   /**
@@ -241,7 +328,11 @@ export class Player {
       this.tempVector1.add(this.cachedRight);
     }
 
-    if (this.tempVector1.length() > 0) {
+    const hasMovementInput = this.tempVector1.lengthSq() > 0;
+
+    this.handleFootstepSound(hasMovementInput && this.isGrounded, deltaTime);
+
+    if (hasMovementInput) {
       this.tempVector1.normalize();
       this.tempVector1.multiplyScalar(moveSpeed);
 
@@ -259,6 +350,7 @@ export class Player {
     if (this.keyboard.isJump() && this.isGrounded) {
       this.velocity.y = this.config.jumpVelocity;
       this.isGrounded = false;
+      this.playJumpSound();
     }
 
     this.velocity.y += this.config.gravity * deltaTime;

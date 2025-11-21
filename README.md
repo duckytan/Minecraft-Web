@@ -78,11 +78,16 @@
 
 当前已完成：
 - ✅ Phase 1: MVP 基础功能（100%，10/10 任务）
-- 🚧 Phase 2: 性能优化（50%，2/4 任务）
+- ✅ Phase 2: 性能优化（100%，4/4 任务）
   - ✅ OPT-01: Chunk 系统（16x16x64 分块加载）
   - ✅ OPT-02: 面剔除优化（包含在 Chunk 系统中）
-  - ⬜ OPT-03: Perlin 噪声地形
-  - ⬜ OPT-04: Web Worker 地形生成
+  - ✅ OPT-03: Perlin 噪声地形
+  - ✅ OPT-04: Web Worker 地形生成
+- ✅ Phase 3: 功能增强（100%，4/4 任务）
+  - ✅ FEAT-01: 方块选择栏 UI
+  - ✅ FEAT-02: 本地存档系统（LocalStorage）
+  - ✅ FEAT-03: 存档控制界面
+  - ✅ FEAT-04: 音效系统（程序化生成音效）
 
 详细进度请查看 [PROGRESS.md](PROGRESS.md) 和 [DEVELOPMENT_REPORT.md](DEVELOPMENT_REPORT.md)。
 
