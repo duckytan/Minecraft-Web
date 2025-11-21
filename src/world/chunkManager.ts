@@ -8,6 +8,11 @@ import {
   DEFAULT_TERRAIN_CONFIG,
   type AdvancedTerrainConfig
 } from './advancedTerrain';
+import {
+  PerlinTerrainGenerator,
+  DEFAULT_PERLIN_CONFIG,
+  type PerlinTerrainConfig
+} from './perlinTerrainGenerator';
 import { ChunkLoadQueue } from './chunkLoadQueue';
 import { DEFAULT_RENDER_DISTANCE_PC, MAX_CHUNKS_LOAD_PER_FRAME } from '../core/constants';
 
@@ -17,6 +22,9 @@ export interface BlockChange {
   z: number;
   type: BlockType;
 }
+
+type TerrainAlgorithm = 'simplex' | 'perlin';
+type TerrainConfigUpdate = Partial<AdvancedTerrainConfig & PerlinTerrainConfig>;
 
 /**
  * ChunkManager 类 - 管理所有 Chunk 的生命周期
